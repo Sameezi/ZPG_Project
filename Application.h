@@ -21,6 +21,7 @@ class Application{
 		void run();
 		void addScenes();
 		void processInput();
+		float randomFloat(float lo, float hi);
 
 	private:
 		GLFWwindow* window{nullptr};

@@ -21,6 +21,10 @@
 #include "models/earth.h"
 #include "models/moon.h"
 #include "models/sun.h"
+#include "Scaling.h"
+#include "Translation.h"
+#include "Rotation.h"
+#include "TransformComposite.h"
 
 Application::Application() = default;
 
@@ -76,11 +80,27 @@ int Application::init(){
 	return 0;
 }
 
+
+
 void Application::processInput(){
 	
-	if(glfwGetKey(window,GLFW_KEY_SPACE) == GLFW_PRESS){
+	if(glfwGetKey(window,GLFW_KEY_R) == GLFW_PRESS){
+		auto composite = std::make_shared<TransformComposite>();
+	// Demonstration of flipping T . R with R . T on triangle demonstrating that matrix multiplication is not comutative
+	 composite->addNode(std::make_shared<Translation>(glm::vec3(0.5f, 0.f, 0.f)));
+	 composite->addNode(std::make_shared<Rotation>(glm::radians(70.f), glm::vec3(0.f, 0.f, 1.f)));
+
+	 m_scenes[1]->getObject("triangle").setTransform(composite);
 	}
 
+	if(glfwGetKey(window,GLFW_KEY_T) == GLFW_PRESS){
+	    auto composite = std::make_shared<TransformComposite>();
+	// Demonstration of flipping T . R with R . T on triangle demonstrating that matrix multiplication is not comutative
+	 composite->addNode(std::make_shared<Rotation>(glm::radians(70.f), glm::vec3(0.f, 0.f, 1.f)));
+	 composite->addNode(std::make_shared<Translation>(glm::vec3(0.5f, 0.f, 0.f)));
+
+	 m_scenes[1]->getObject("triangle").setTransform(composite);
+	}
 
 	if(glfwGetKey(window,GLFW_KEY_1) == GLFW_PRESS){
 		this->main_scene = m_scenes[0];
@@ -93,6 +113,11 @@ void Application::processInput(){
 	}
 }
 
+float Application::randomFloat(float lo, float hi) {
+     static std::mt19937 gen{std::random_device{}()};
+     std::uniform_real_distribution<float> dist(lo, hi);
+     return dist(gen);
+}
 
 void Application::addScenes(){
 	 // Triangle example
@@ -108,33 +133,52 @@ void Application::addScenes(){
      std::vector<float> earthVertices(earth, earth+ (sizeof(earth) / sizeof(float)));
      std::vector<float> sunVertices(sun,sun + (sizeof(sun) / sizeof(float)));
      std::vector<float> moonVertices(moon,moon + (sizeof(moon) / sizeof(float)));
-	 
-	 // Creating sun
+
+     // Creating sun
 	 m_scenes[0]->addObject("sun",std::make_unique<DrawableObject>(sunVertices,9,
 															std::make_unique<ShaderProgram>("shaders/transformable_9float.vert","shaders/basic.frag")));
-	 m_scenes[0]->getObject("sun").getTransform().setScale(0.2f);														
-
-	// Creating earth
-	 m_scenes[0]->addGroup("earthPivot"); // Pivot rotating around sun
-	 m_scenes[0]->addGroup("earthSystem","earthPivot").getTransform().setPosition({0.9f,0.0f,0.0f}); // Offset from sun
-	 
+								
+	 // Creating earth
 	 m_scenes[0]->addObject("earth",std::make_unique<DrawableObject>(earthVertices,9,
-															std::make_unique<ShaderProgram>("shaders/transformable_9float.vert","shaders/basic.frag")),"earthSystem");
-	 m_scenes[0]->getObject("earth").getTransform().setScale(0.03f);
-	 
+															std::make_unique<ShaderProgram>("shaders/transformable_9float.vert","shaders/basic.frag")));
 	 // Creating moon
-	 m_scenes[0]->addGroup("moonPivot","earthSystem");
-	 auto& moon = m_scenes[0]->addObject("moon",std::make_unique<DrawableObject>(moonVertices,9,
-															std::make_unique<ShaderProgram>("shaders/transformable_9float.vert","shaders/basic.frag")),"moonPivot");
-	 moon.getTransform().setPosition({0.1f,0.0f,0.0f});
-	 moon.getTransform().setScale(0.01f);
+	 m_scenes[0]->addObject("moon",std::make_unique<DrawableObject>(moonVertices,9,
+														std::make_unique<ShaderProgram>("shaders/transformable_9float.vert","shaders/basic.frag")));
+	 
+	{												
+	//sun 
+	auto sun = std::make_shared<TransformComposite>();
+	sun->addNode(std::make_shared<Rotation>(glm::radians(70.f), glm::vec3(0.f, -1.f, 0.f), 0.3f));
+	sun->addNode(std::make_shared<Scaling>(.3f));
+	m_scenes[0]->getObject("sun").setTransform(sun);
 
+	// earth orbit around sun
+	auto earthOrbit = std::make_shared<TransformComposite>();
+	earthOrbit->addNode(std::make_shared<Rotation>(0.f, glm::vec3(0.f, 1.f, 0.f), 0.5f));
+	earthOrbit->addNode(std::make_shared<Translation>(glm::vec3(0.9f, 0.f, 0.f)));
+
+	//  earth * scale
+	auto earth = std::make_shared<TransformComposite>();
+	earth->addNode(earthOrbit);
+	earth->addNode(std::make_shared<Rotation>(glm::radians(70.f), glm::vec3(0.f, 1.f, 0.f), 16.0f));
+	earth->addNode(std::make_shared<Scaling>(.03f));
+	m_scenes[0]->getObject("earth").setTransform(earth);
+
+	// moon =earth orbit * orbit around earth * scale 
+	auto moon = std::make_shared<TransformComposite>();
+	moon->addNode(earthOrbit);                                                          
+	moon->addNode(std::make_shared<Rotation>(0.f, glm::vec3(0.f, 1.f, 0.f), 2.f));        
+	moon->addNode(std::make_shared<Translation>(glm::vec3(0.2f, 0.f, 0.f)));              
+	moon->addNode(std::make_shared<Scaling>(.01f));
+	m_scenes[0]->getObject("moon").setTransform(moon);
+	}
 
 	 // Setting up triangle scene
 	 m_scenes[1]->init();
-	 float triangle[]={-1.0f,0.0f,0.0f,1.0f,0.0f,0.0f,
-					    0.0f,1.0f,0.0f,0.0f,1.0f,0.0f,
-						1.0f,0.0f,0.0f,0.0f,0.0f,1.0f};
+	 float triangle[]={-0.5f,0.0f,0.0f,1.0f,0.0f,0.0f,
+					    0.0f,0.5f,0.0f,1.0f,0.0f,0.0f,
+						0.5f,0.0f,0.0f,1.0f,0.0f,0.0f};
+	 
 	 std::vector<float> triangleVertices(triangle, triangle+ (sizeof(triangle) / sizeof(float)));
 	 m_scenes[1]->addObject("triangle",std::make_unique<DrawableObject>(triangleVertices,
 															std::make_unique<ShaderProgram>("shaders/transformable.vert","shaders/basic.frag")));
@@ -143,15 +187,16 @@ void Application::addScenes(){
 	 m_scenes[2]->init();
 	 std::vector<float> treeVertices(tree, tree+ (sizeof(tree) / sizeof(float)));
 
-	 for(int i = 0; i <= 3; i++){
+	 for(int i = 0; i <= 10; i++){
      std::string name = "tree" + std::to_string(i);
-	 std::random_device rd;
-	 std::mt19937 gen(rd());
-	 std::uniform_real_distribution<float> dist(0.1f, 0.25f);
-	 float randomScale = dist(gen);
-	 m_scenes[2]->addObject(name,std::make_unique<DrawableObject>(treeVertices,std::make_unique<ShaderProgram>("shaders/transformable.vert","shaders/basic.frag")));
-	 m_scenes[2]->getObject(name).getTransform().setScale(0.25f);
-	 m_scenes[2]->getObject(name).getTransform().setPosition({randomScale*3,0.0f,0.0f});
+
+	 float randomScale = randomFloat(0.1f, 0.25f); 
+	 float randomOffset = randomFloat(-0.90f, 0.90f);
+	 auto composite = std::make_shared<TransformComposite>();
+	 composite->addNode(std::make_shared<Rotation>(glm::radians(randomScale), glm::vec3(0.f, 0.f, 1.f)));
+	 composite->addNode(std::make_shared<Translation>(glm::vec3(randomOffset, 0.f, 0.f)));
+	 composite->addNode(std::make_shared<Scaling>(randomScale));
+	 m_scenes[2]->addObject(name,std::make_unique<DrawableObject>(treeVertices,std::make_unique<ShaderProgram>("shaders/transformable.vert","shaders/basic.frag"))).setTransform(composite);
 	 }
 
 	 this->main_scene = m_scenes[0];
@@ -184,12 +229,7 @@ void Application::run(){
 
 	glEnable(GL_DEPTH_TEST);
 	main_scene->draw();
-	if(main_scene == m_scenes[0]){
-		main_scene->getObject("earth").getTransform().setRotation({23.5f,now*32,0});
-		main_scene->getObject("sun").getTransform().setRotation({0,now*(-2),0});
-		main_scene->getGroup("earthPivot").getTransform().setRotation({0, now * 32.0f,  0});
-		main_scene->getGroup("moonPivot").getTransform().setRotation({0, now * 120.0f, 0});
-	}
+
 	// Display the rendered frame and process events
 	glfwSwapBuffers(window);
 	glfwPollEvents();

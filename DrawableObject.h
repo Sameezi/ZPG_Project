@@ -12,9 +12,8 @@
 #include "Model.h"
 #include "ShaderProgram.h"
 #include "Transform.h"
-#include "SceneNode.h"
 
-class DrawableObject : public SceneNode{
+class DrawableObject{
     public:
     // uses its own shader, built from source
         DrawableObject(const std::vector<float>& vertices, std::unique_ptr<ShaderProgram> shader);
@@ -22,8 +21,10 @@ class DrawableObject : public SceneNode{
     // no shader — scene will supply one at draw time
         explicit DrawableObject(const std::vector<float>& vertices);
 
-        void draw(const glm::mat4& parentWorld,ShaderProgram& fallbackShader) override;
+        void draw(ShaderProgram& fallbackShader);
         void update(float deltat);
+        void setTransform(std::shared_ptr<Transform> t);
+
 
         DrawableObject(const DrawableObject&) = delete;
         DrawableObject& operator=(const DrawableObject&) = delete;
@@ -33,5 +34,6 @@ class DrawableObject : public SceneNode{
     private:
        Model m_model; 
        std::unique_ptr<ShaderProgram> m_ownedShader;
+       std::shared_ptr<Transform> m_transform;
        glm::vec3 position{0.0f}; 
 };

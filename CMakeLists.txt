@@ -7,7 +7,7 @@ set(OpenGL_GL_PREFERENCE GLVND)
 find_package(glfw3 REQUIRED)
 find_package(OpenGL REQUIRED)
 
-add_executable(LearnOpenGL main.cpp Application.cpp Scene.cpp Shader.cpp DrawableObject.cpp Model.cpp ShaderProgram.cpp Transform.cpp GroupNode.cpp SceneNode.cpp) 
+add_executable(LearnOpenGL main.cpp Application.cpp Scene.cpp Shader.cpp DrawableObject.cpp Model.cpp ShaderProgram.cpp Rotation.cpp Scaling.cpp Translation.cpp TransformComposite.cpp)
 
 configure_file(${CMAKE_SOURCE_DIR}/shaders/basic.vert ${CMAKE_BINARY_DIR}/shaders/basic.vert COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/shaders/basic.frag ${CMAKE_BINARY_DIR}/shaders/basic.frag COPYONLY)

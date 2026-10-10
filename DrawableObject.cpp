@@ -24,13 +24,18 @@ DrawableObject::DrawableObject(const std::vector<float>& vertices, int numFloats
 {}
 
 void DrawableObject::update(float deltat){
-    
+    // TO be implemented
 }
 
-void DrawableObject::draw(const glm::mat4& parentWorld,ShaderProgram& fallbackShader){
+void DrawableObject::setTransform(std::shared_ptr<Transform> t){
+    m_transform = std::move(t);
+}
+
+void DrawableObject::draw(ShaderProgram& fallbackShader){
     ShaderProgram& shader = m_ownedShader ? *m_ownedShader : fallbackShader;
     shader.use();
-    shader.setMat4("modelMatrix", parentWorld * m_transform.getMatrix()); 
+    glm::mat4 Matrice = m_transform ? m_transform->getMatrix() : glm::mat4(1.f); // If transform is nullptr, use identity matrix 
+    shader.setMat4("modelMatrix", Matrice); 
      
     m_model.draw();
 }
