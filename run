@@ -1,0 +1,10 @@
+cd build
+cmake ..
+make
+if [ $? -ne 0 ]; then 
+	printf '\033[31mBuild failed\033[0m\n'
+	cd ..
+	exit 1
+fi
+./LearnOpenGL
+cd ..
