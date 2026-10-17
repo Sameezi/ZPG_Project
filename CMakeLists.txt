@@ -2,22 +2,38 @@ cmake_minimum_required(VERSION 3.10)
 project(LearnOpenGL)
 
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(OpenGL_GL_PREFERENCE GLVND)
 find_package(glfw3 REQUIRED)
 find_package(OpenGL REQUIRED)
 
-add_executable(LearnOpenGL main.cpp Application.cpp Scene.cpp Shader.cpp DrawableObject.cpp Model.cpp ShaderProgram.cpp Rotation.cpp Scaling.cpp Translation.cpp TransformComposite.cpp)
+add_executable(LearnOpenGL 
+src/main.cpp 
+src/core/Application.cpp 
+src/core/Scene.cpp 
+src/core/Camera.cpp
+src/graphics/DrawableObject.cpp
+src/graphics/Model.cpp
+src/graphics/Shader.cpp
+src/graphics/ShaderProgram.cpp
+src/transformation/Rotation.cpp
+src/transformation/Scaling.cpp
+src/transformation/Translation.cpp
+src/transformation/TransformComposite.cpp
+)
 
-configure_file(${CMAKE_SOURCE_DIR}/shaders/basic.vert ${CMAKE_BINARY_DIR}/shaders/basic.vert COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/shaders/basic.frag ${CMAKE_BINARY_DIR}/shaders/basic.frag COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/shaders/transformable.vert ${CMAKE_BINARY_DIR}/shaders/transformable.vert COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/shaders/transformable_9float.vert ${CMAKE_BINARY_DIR}/shaders/transformable_9float.vert COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/shaders/transformable_9float.frag ${CMAKE_BINARY_DIR}/shaders/transformable_9float.frag COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/shaders/rotation_Zaxis.vert ${CMAKE_BINARY_DIR}/shaders/rotation_Zaxis.vert COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/shaders/rotation_Yaxis.vert ${CMAKE_BINARY_DIR}/shaders/rotation_Yaxis.vert COPYONLY)
+file(GLOB SHADER_FILES ${CMAKE_SOURCE_DIR}/shaders/*.vert ${CMAKE_SOURCE_DIR}/shaders/*.frag)
+foreach(SHADER ${SHADER_FILES})
+    get_filename_component(SHADER_NAME ${SHADER} NAME)
+    configure_file(${SHADER} ${CMAKE_BINARY_DIR}/shaders/${SHADER_NAME} COPYONLY)
+endforeach()
 
-target_include_directories(LearnOpenGL PRIVATE . ${CMAKE_SOURCE_DIR}/../external_headers/)
+target_include_directories(LearnOpenGL PRIVATE 
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/../external_headers/
+)
+
 target_link_libraries(LearnOpenGL
     PRIVATE
     glfw

@@ -11,20 +11,19 @@
 
 #include "Model.h"
 #include "ShaderProgram.h"
-#include "Transform.h"
+#include "transformation/Transform.h"
 
 class DrawableObject{
     public:
     // uses its own shader, built from source
-        DrawableObject(const std::vector<float>& vertices, std::unique_ptr<ShaderProgram> shader);
-        DrawableObject(const std::vector<float>& vertices, int numFloats, std::unique_ptr<ShaderProgram> shader);
+        DrawableObject(std::shared_ptr<Model> model, std::shared_ptr<ShaderProgram> shader);
     // no shader — scene will supply one at draw time
-        explicit DrawableObject(const std::vector<float>& vertices);
-
+        explicit DrawableObject(std::shared_ptr<Model> model);
+        
         void draw(ShaderProgram& fallbackShader);
         void update(float deltat);
         void setTransform(std::shared_ptr<Transform> t);
-
+        void setTime(float time);
 
         DrawableObject(const DrawableObject&) = delete;
         DrawableObject& operator=(const DrawableObject&) = delete;
@@ -32,8 +31,8 @@ class DrawableObject{
         DrawableObject& operator=(DrawableObject&&) = default;
 
     private:
-       Model m_model; 
-       std::unique_ptr<ShaderProgram> m_ownedShader;
+       std::shared_ptr<Model> m_model; 
+       std::shared_ptr<ShaderProgram> m_shader;
        std::shared_ptr<Transform> m_transform;
        glm::vec3 position{0.0f}; 
 };

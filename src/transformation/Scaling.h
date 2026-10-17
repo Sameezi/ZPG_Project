@@ -3,7 +3,7 @@
 
 class Scaling : public Transform{
     public:
-        explicit Scaling(glm::vec3 scale) : factors(factors) {}
+        explicit Scaling(glm::vec3 scale) : factors(scale) {}
         explicit Scaling(float uniform) :  factors(glm::vec3(uniform,uniform,uniform)) {}
         glm::mat4 getMatrix() const override;
     private:

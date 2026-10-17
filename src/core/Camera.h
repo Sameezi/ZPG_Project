@@ -1,0 +1,38 @@
+#pragma once
+
+#include <glad/gl.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <vector>
+#include <memory>
+#include "Observer.h"
+
+class Camera{
+    public:
+       void addObserver(Observer* obs);
+       void delObserver(Observer* obs);
+       void notify();
+
+       glm::mat4 getViewMatrix() const;
+       glm::mat4 getProjMatrix() const;
+
+       void setProjMatrix(glm::mat4 proj);
+       glm::vec3 getFront();
+
+       void rotate(float deltaYaw, float deltaPitch);
+       void setMovement(glm::vec2 offset);
+
+       void updateView();
+       void update(float deltaTime);
+
+    private:
+        glm::mat4 viewMatrix{1.0f};
+        glm::mat4 projectionMatrix{1.0f};
+        std::vector<Observer*> observers;
+
+        float yaw{-90.0f};
+        float pitch{0.0f};
+        glm::vec2 movement{0.0f,0.0f};
+        glm::vec3 position{0.0f, 0.0f, 3.0f};
+
+};
