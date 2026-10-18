@@ -17,6 +17,7 @@ src/graphics/DrawableObject.cpp
 src/graphics/Model.cpp
 src/graphics/Shader.cpp
 src/graphics/ShaderProgram.cpp
+src/graphics/InstancedModel.cpp
 src/transformation/Rotation.cpp
 src/transformation/Scaling.cpp
 src/transformation/Translation.cpp

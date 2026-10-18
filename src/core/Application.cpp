@@ -28,6 +28,7 @@
 #include "transformation/TransformComposite.h"
 #include "core/Camera.h"
 #include "graphics/Model.h"
+#include "graphics/InstancedModel.h"
 
 Application::Application() = default;
 
@@ -245,27 +246,30 @@ void Application::addScenes(){
 	 ).setTransform(composite);
 	 }
 
-	 // Creating nicer trees
+	 {// Creating nicer trees
 	 std::vector<float> treeVertices(tree, tree+ (sizeof(tree) / sizeof(float)));
 	 auto niceTree = std::make_shared<ShaderProgram>(
     	"shaders/treeColored.vert",
     	"shaders/treeColored.frag",
 		m_scenes[1]->getCamera()
 	 );
-	 auto treeModel = std::make_shared<Model>(treeVertices);
-	 
+	 auto treeModel = std::make_shared<InstancedModel>(treeVertices);
+	 std::vector<TransformComposite> composites;
 	 for(int i = 0; i <= 73; i++){
-     std::string name = "tree" + std::to_string(i);
-
 	 float randomScale = randomFloat(0.1f, 0.25f); 
 	 float randomZ = randomFloat(-25.0f, 25.0f);
 	 float randomX = randomFloat(-25.0f, 25.0f);
-	 auto composite = std::make_shared<TransformComposite>();
+	 float randomRot = randomFloat(-90.0f,90.0f);
+
+	 TransformComposite composite; 
 	 
-	 
-	 composite->addNode(std::make_shared<Translation>(glm::vec3(randomX, .0f, randomZ)));
-	 composite->addNode(std::make_shared<Scaling>(randomScale));
-	 m_scenes[1]->addObject(name,std::make_unique<DrawableObject>(treeModel,niceTree)).setTransform(composite);
+	 composite.addNode(std::make_shared<Translation>(glm::vec3(randomX, .0f, randomZ)));
+	 composite.addNode(std::make_shared<Rotation>(glm::radians(randomRot),glm::vec3(0.0,1.0,0.0)));
+	 composite.addNode(std::make_shared<Scaling>(randomScale));
+	 composites.push_back(std::move(composite));
+	 }
+	 treeModel->setInstances(composites);
+	 m_scenes[1]->addObject("trees",std::make_unique<DrawableObject>(treeModel, niceTree));
 	 }
 
 	 // Adding clock
@@ -325,19 +329,23 @@ void Application::run(){
         frameCount = 0;
         lastTime = now;
     }
-
-	main_scene->getObject("clock1").setTime(secondsSinceMidnight());
-
+	if(main_scene == m_scenes[1]) main_scene->getObject("clock1").setTime(secondsSinceMidnight());
+	
 	// Clear color and depth buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	main_scene->getCamera()->update(1.0f);
 	processInput();
 
+	// Reset
+	RenderStats::drawCalls = 0;
+	RenderStats::instances = 0;
+
 	// Draw scene
 	glEnable(GL_DEPTH_TEST);
 	main_scene->draw();
-	
 
+		std::cout << "draw calls: " << RenderStats::drawCalls
+              << ", instances: " << RenderStats::instances << '\n';
 	
 	// Display the rendered frame and process events
 	glfwSwapBuffers(window);

@@ -1,22 +1,23 @@
 #pragma once
 
 #include <glad/gl.h>
-
+#include "RenderStats.h"
 #include <vector>
 
 class Model{
     public:
         Model(const std::vector<float>& vertices);
         Model(const std::vector<float>& vertices, int numFloats);
-        ~Model();
+        virtual ~Model();
 
         Model(const Model&) = delete;
         Model& operator=(const Model&) = delete;
 
-        void draw() const; 
+        virtual void draw() const; 
     private:
         std::vector<float> m_vertices;
-        GLuint vao{0}, vbo{0};
+        GLuint vbo{0};
+    protected:
         GLsizei vertexCount{0};
-
+        GLuint vao{0};
 };

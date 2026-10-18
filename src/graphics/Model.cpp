@@ -73,6 +73,7 @@ void Model::draw() const {
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLES, 0, vertexCount);
     glBindVertexArray(0);
+    ++RenderStats::drawCalls;
 }
 
 
