@@ -54,6 +54,7 @@ int Application::init(){
 	GLFW_OPENGL_CORE_PROFILE);  //*/
 
 	// Create a window
+	glfwWindowHint(GLFW_SAMPLES, 4);
 	this->window = glfwCreateWindow(800,600,"ZPG",NULL,NULL);
 	if (!window){
 		glfwTerminate();
@@ -185,7 +186,7 @@ void Application::addScenes(){
 	 auto planetsShader = std::make_shared<ShaderProgram>
 	 (
 		"shaders/projective.vert",
-		"shaders/transformable_9float.frag",
+		"shaders/basic.frag",
 		m_scenes[0]->getCamera()
 	 );
      // Creating sun
@@ -300,7 +301,7 @@ void Application::addScenes(){
 	 }
 
 	 this->main_scene = m_scenes[1];
-		glm::mat4 proj = glm::perspective(glm::radians(45.0f),
+		glm::mat4 proj = glm::perspective(glm::radians(60.0f),
                                 800.0f / 600.0f,
                                 0.1f, 100.0f);
 	
@@ -314,7 +315,7 @@ void Application::addScenes(){
 void Application::run(){
 	double lastTime = glfwGetTime();
 	int frameCount = 0;
-
+	glEnable(GL_MULTISAMPLE);
 	while (!glfwWindowShouldClose(window))
 	{
 	// FPS
