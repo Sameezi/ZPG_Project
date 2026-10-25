@@ -39,6 +39,8 @@ class ShaderProgram : public Observer {
 		Camera* m_camera{nullptr};
 		Shader vertexShader;
 		Shader fragmentShader;
+		GLint viewPosExist{0};
+		GLint lightPosExist{0};
 		GLuint id{0};
 	
 };

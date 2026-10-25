@@ -18,6 +18,7 @@ class Camera{
 
        void setProjMatrix(glm::mat4 proj);
        glm::vec3 getFront();
+       glm::vec3 getPos();
 
        void rotate(float deltaYaw, float deltaPitch);
        void setMovement(glm::vec2 offset);
@@ -25,6 +26,7 @@ class Camera{
        void updateView();
        void update(float deltaTime);
 
+       void setAspectRatio(float aspect);
     private:
         glm::mat4 viewMatrix{1.0f};
         glm::mat4 projectionMatrix{1.0f};
@@ -32,6 +34,10 @@ class Camera{
 
         float yaw{-90.0f};
         float pitch{0.0f};
+        float fov{60.0f};
+        float nearPlane{0.1f};
+        float farPlane{100.0f};
+
         glm::vec2 movement{0.0f,0.0f};
         glm::vec3 position{0.0f, 0.0f, 3.0f};
 

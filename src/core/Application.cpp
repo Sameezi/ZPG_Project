@@ -22,6 +22,9 @@
 #include "../models/sun.h"
 #include "../models/clock.h"
 #include "../models/login_points.h"
+#include "../models/suzi_flat.h"
+#include "../models/sphere.h"
+#include "../models/rocket.h"
 #include "transformation/Scaling.h"
 #include "transformation/Translation.h"
 #include "transformation/Rotation.h"
@@ -54,7 +57,7 @@ int Application::init(){
 	GLFW_OPENGL_CORE_PROFILE);  //*/
 
 	// Create a window
-	glfwWindowHint(GLFW_SAMPLES, 4);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 	this->window = glfwCreateWindow(800,600,"ZPG",NULL,NULL);
 	if (!window){
 		glfwTerminate();
@@ -64,9 +67,12 @@ int Application::init(){
 	glfwSetWindowUserPointer(window,this);
 	glfwSetMouseButtonCallback(window, Application::mouseButtonCallback);
 	glfwSetCursorPosCallback(window, Application::cursorPosCallback);
+	glfwSetFramebufferSizeCallback(window, Application::framebufferSizeCallback);
 
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
+
+
 	
 	// Initialize GLAD and load OpenGL function pointers
 	if (!gladLoadGL(glfwGetProcAddress)) {
@@ -114,6 +120,25 @@ void Application::cursorPosCallback(GLFWwindow* window, double x, double y) {
     app->main_scene->getCamera()->rotate(dx, dy);
 }
 
+void Application::framebufferSizeCallback(GLFWwindow* window, int width, int height){
+	auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+    if (app) app->onResize(width, height);
+}
+
+void Application::onResize(int width, int height)
+{
+    if (width == 0 || height == 0) return; // minimized
+
+    fbWidth = width;
+    fbHeight = height;
+    glViewport(0, 0, width, height);
+
+	for(auto& scene: m_scenes){
+		scene->getCamera()->setAspectRatio(static_cast<float>(width) / height);
+	}
+
+}
+
 void Application::processInput(){
 
 	float cameraSpeed = 0.05f;
@@ -148,6 +173,11 @@ void Application::processInput(){
     	glClearColor(backgroundColor.x,backgroundColor.y,backgroundColor.z,backgroundColor.w);
 		this->main_scene = m_scenes[1];
 	}
+	if(glfwGetKey(window,GLFW_KEY_3) == GLFW_PRESS){
+		glm::vec4 backgroundColor = this->main_scene->getBackgroundColor();
+    	glClearColor(backgroundColor.x,backgroundColor.y,backgroundColor.z,backgroundColor.w);
+		this->main_scene = m_scenes[2];
+	}
 }
 
 float Application::randomFloat(float lo, float hi) {
@@ -176,26 +206,44 @@ void Application::addScenes(){
 	 m_scenes.push_back(new Scene());
 	 // Forest example
 	 m_scenes.push_back(new Scene());
+	 // Lighting example
+	 m_scenes.push_back(new Scene());
 
 	 ///////////////////////////////// Setting up space scene
 	 m_scenes[0]->init();
      std::vector<float> earthVertices(earth, earth+ (sizeof(earth) / sizeof(float)));
      std::vector<float> sunVertices(sun,sun + (sizeof(sun) / sizeof(float)));
      std::vector<float> moonVertices(moon,moon + (sizeof(moon) / sizeof(float)));
-	 
-	 auto planetsShader = std::make_shared<ShaderProgram>
+	 std::vector<float> loginVertices(login,login + (sizeof(login) / sizeof(float)));
+	 std::vector<float> rocketVertices(rocket, rocket + (sizeof(rocket) / sizeof(float)));
+	 auto phongShader = std::make_shared<ShaderProgram>
 	 (
-		"shaders/projective.vert",
-		"shaders/basic.frag",
+		"shaders/lighting_9float.vert",
+		"shaders/phong_point.frag",
+		m_scenes[0]->getCamera()
+	 );
+	 auto ambientShader = std::make_shared<ShaderProgram>
+	 (
+		"shaders/lighting_9float.vert",
+		"shaders/ambient.frag",
+		m_scenes[0]->getCamera()
+	 );
+	 auto blinPhongShader = std::make_shared<ShaderProgram>
+	 (
+		"shaders/lighting_6float.vert",
+		"shaders/phong_color.frag",
 		m_scenes[0]->getCamera()
 	 );
      // Creating sun
-	 m_scenes[0]->addObject("sun",std::make_unique<DrawableObject>(std::make_shared<Model>(sunVertices,9),planetsShader));
+	 m_scenes[0]->addObject("sun",std::make_unique<DrawableObject>(std::make_shared<Model>(sunVertices,9),ambientShader));
 	 // Creating earth
-	 m_scenes[0]->addObject("moon",std::make_unique<DrawableObject>(std::make_shared<Model>(moonVertices,9),planetsShader));
+	 m_scenes[0]->addObject("moon",std::make_unique<DrawableObject>(std::make_shared<Model>(moonVertices,9),phongShader));
 	 // Creating moon
-	 m_scenes[0]->addObject("earth",std::make_unique<DrawableObject>(std::make_shared<Model>(earthVertices,9),planetsShader));
-
+	 m_scenes[0]->addObject("earth",std::make_unique<DrawableObject>(std::make_shared<Model>(earthVertices,9),phongShader));
+	 // Creating login
+	 m_scenes[0]->addObject("login",std::make_unique<DrawableObject>(std::make_shared<Model>(loginVertices,6),blinPhongShader));
+	 // Creating rocket
+	 m_scenes[0]->addObject("rocket",std::make_unique<DrawableObject>(std::make_shared<Model>(rocketVertices,9),phongShader));
 	{												
 	//sun 
 	auto sun = std::make_shared<TransformComposite>();
@@ -211,7 +259,7 @@ void Application::addScenes(){
 	//  earth * scale
 	auto earth = std::make_shared<TransformComposite>();
 	earth->addNode(earthOrbit);
-	earth->addNode(std::make_shared<Rotation>(glm::radians(70.f), glm::vec3(0.f, 1.f, 0.f), 16.0f));
+	earth->addNode(std::make_shared<Rotation>(glm::radians(70.f), glm::vec3(0.f, 1.f, 0.f), 8.0f));
 	earth->addNode(std::make_shared<Scaling>(.03f));
 	m_scenes[0]->getObject("earth").setTransform(earth);
 
@@ -222,6 +270,23 @@ void Application::addScenes(){
 	moon->addNode(std::make_shared<Translation>(glm::vec3(0.2f, 0.f, 0.f)));              
 	moon->addNode(std::make_shared<Scaling>(.01f));
 	m_scenes[0]->getObject("moon").setTransform(moon);
+
+	auto login = std::make_shared<TransformComposite>();
+	login->addNode(std::make_shared<Translation>(glm::vec3(1.0f, 1.0f, 1.0f)));              
+	login->addNode(std::make_shared<Rotation>(0.f, glm::vec3(0.f, 1.f, 0.f), 2.f));        
+	login->addNode(std::make_shared<Scaling>(.25f));
+	m_scenes[0]->getObject("login").setTransform(login);
+
+	// earth orbit around sun
+	auto shipOrbit = std::make_shared<TransformComposite>();
+	shipOrbit->addNode(std::make_shared<Rotation>(0.f, glm::vec3(0.f, -1.f, 0.f), 0.5f));
+	shipOrbit->addNode(std::make_shared<Translation>(glm::vec3(1.9f, 0.f, 0.f)));
+
+	auto rocket = std::make_shared<TransformComposite>();
+	rocket->addNode(shipOrbit);
+	rocket->addNode(std::make_shared<Rotation>(0.f, glm::vec3(0.f, 0.f, 1.f),1.0f));        
+	rocket->addNode(std::make_shared<Scaling>(.00009f));
+	m_scenes[0]->getObject("rocket").setTransform(rocket);
 	}
 
 	 ///////////////////////////////// Setting up forest scene
@@ -288,27 +353,39 @@ void Application::addScenes(){
 	 composite2->addNode(std::make_shared<Scaling>(glm::vec3(-1,1,1)));
 	 m_scenes[1]->addObject("clock2", std::make_unique<DrawableObject>(model,shader)).setTransform(composite2);
 	 }
-
-	 { // Adding login
-		std::vector<float> loginVertices(login, login + sizeof(login) / sizeof(float));
-		auto shader = std::make_shared<ShaderProgram>("shaders/transformable.vert","shaders/basic.frag");
-		auto model = std::make_shared<Model>(loginVertices);
-	    auto composite = std::make_shared<TransformComposite>();
-	 	composite->addNode(std::make_shared<Translation>(glm::vec3(0.5f,-0.9f,.0f)));
-	 	composite->addNode(std::make_shared<Scaling>(0.5f));
-
-		m_scenes[1]->addObject("login", std::make_unique<DrawableObject>(model,shader)).setTransform(composite);
-	 }
-
+	 
 	 this->main_scene = m_scenes[1];
 		glm::mat4 proj = glm::perspective(glm::radians(60.0f),
                                 800.0f / 600.0f,
                                 0.1f, 100.0f);
-	
+
+	/////////// Setting up light example scene 
+	m_scenes[2]->init();
+	 {
+		std::vector<float> sphereVertices(sphere, sphere+ (sizeof(sphere) / sizeof(float)));
+		auto shader = std::make_shared<ShaderProgram>("shaders/lighting_6float.vert","shaders/blinn_phong.frag",m_scenes[2]->getCamera());
+
+		auto model = std::make_shared<Model>(sphereVertices);
+		
+		float coords[8] = {1.0f,0.0f,-1.0f,0.0f,0.0f,1.0f,0.0f,-1.0f};
+		int idx = 0;
+		for(int i = 0; i <= 4; i++){
+			std::string name = "sphere" + std::to_string(i);
+			auto composite = std::make_shared<TransformComposite>();
+			int x = coords[idx++];
+			int y = coords[idx++];
+			composite->addNode(std::make_shared<Translation>(glm::vec3(x,y,0.0f)));
+			composite->addNode(std::make_shared<Scaling>(0.25f));
+			m_scenes[2]->addObject(name, std::make_unique<DrawableObject>(model,shader)).setTransform(composite);
+		}
+	 }
+
+	 this->main_scene = m_scenes[0];
 	for(auto& scene: m_scenes){
 		scene->getCamera()->setProjMatrix(proj);
 	}
-	 
+	
+	
 }
 
 

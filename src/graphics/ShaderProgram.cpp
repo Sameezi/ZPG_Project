@@ -34,6 +34,17 @@ ShaderProgram::ShaderProgram(const std::string& vertexSource,const std::string& 
 
 	m_camera = camera;
 	if (m_camera) m_camera->addObserver(this);	
+
+	if (m_camera != nullptr){
+	GLint location = glGetUniformLocation(id,"viewPos");
+		if(location != -1){
+			viewPosExist = 1;
+		}
+	location = glGetUniformLocation(id,"lightPos");
+		if(location != -1){
+			lightPosExist = 1;
+		}
+	}
 }
 
 ShaderProgram::~ShaderProgram(){
@@ -100,11 +111,17 @@ void ShaderProgram::setTime(float time){
 		exit(EXIT_FAILURE);
 	}
 	glUniform1f(location, time);
-
 }
 
 void ShaderProgram::update(Camera& camera) const{
 	use();
 	setMat4("projectionMatrix",camera.getProjMatrix());
 	setMat4("viewMatrix",camera.getViewMatrix());
+
+	if(viewPosExist){
+		setVec3("viewPos", camera.getPos());
+	}
+	if(lightPosExist){
+		setVec3("lightPos", glm::vec3(0.0,0.0,0.0)); 
+	}
  }

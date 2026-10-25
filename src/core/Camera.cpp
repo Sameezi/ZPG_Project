@@ -78,3 +78,11 @@ void Camera::update(float deltaTime){
     position += front * movement.x * deltaTime;
     updateView();
 }
+
+glm::vec3 Camera::getPos(){
+    return position;
+}
+
+void Camera::setAspectRatio(float aspect){
+    projectionMatrix = glm::perspective(glm::radians(fov), aspect, nearPlane, farPlane);
+}

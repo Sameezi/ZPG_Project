@@ -28,6 +28,8 @@ class Application{
 
 		static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 		static void cursorPosCallback(GLFWwindow* window, double x, double y);
+		static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
+		void onResize(int width, int height);
 	private:
 		GLFWwindow* window{nullptr};
 		Scene* main_scene;
@@ -37,6 +39,7 @@ class Application{
 		bool m_dragging{false};
 		double m_lastX{0.0};
 		double m_lastY{0.0};
+		int fbWidth = 800, fbHeight = 600;
 		
 };
 
