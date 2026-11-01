@@ -363,13 +363,13 @@ void Application::addScenes(){
 	m_scenes[2]->init();
 	 {
 		std::vector<float> sphereVertices(sphere, sphere+ (sizeof(sphere) / sizeof(float)));
-		auto shader = std::make_shared<ShaderProgram>("shaders/lighting_6float.vert","shaders/blinn_phong.frag",m_scenes[2]->getCamera());
+		auto shader = std::make_shared<ShaderProgram>("shaders/lighting_6float.vert","shaders/phong_point.frag",m_scenes[2]->getCamera());
 
 		auto model = std::make_shared<Model>(sphereVertices);
 		
 		float coords[8] = {1.0f,0.0f,-1.0f,0.0f,0.0f,1.0f,0.0f,-1.0f};
 		int idx = 0;
-		for(int i = 0; i <= 4; i++){
+		for(int i = 0; i <= 3; i++){
 			std::string name = "sphere" + std::to_string(i);
 			auto composite = std::make_shared<TransformComposite>();
 			int x = coords[idx++];
@@ -380,11 +380,10 @@ void Application::addScenes(){
 		}
 	 }
 
-	 this->main_scene = m_scenes[0];
+	 this->main_scene = m_scenes[2];
 	for(auto& scene: m_scenes){
 		scene->getCamera()->setProjMatrix(proj);
 	}
-	
 	
 }
 
