@@ -9,16 +9,16 @@
 
 class Camera{
     public:
-       void addObserver(Observer* obs);
-       void delObserver(Observer* obs);
+       void addObserver(Observer<Camera>* obs);
+       void delObserver(Observer<Camera>* obs);
        void notify();
 
        glm::mat4 getViewMatrix() const;
        glm::mat4 getProjMatrix() const;
 
        void setProjMatrix(glm::mat4 proj);
-       glm::vec3 getFront();
-       glm::vec3 getPos();
+       glm::vec3 getFront() const;
+       glm::vec3 getPos() const;
 
        void rotate(float deltaYaw, float deltaPitch);
        void setMovement(glm::vec2 offset);
@@ -30,7 +30,7 @@ class Camera{
     private:
         glm::mat4 viewMatrix{1.0f};
         glm::mat4 projectionMatrix{1.0f};
-        std::vector<Observer*> observers;
+        std::vector<Observer<Camera>*> observers;
 
         float yaw{-90.0f};
         float pitch{0.0f};
@@ -39,6 +39,6 @@ class Camera{
         float farPlane{100.0f};
 
         glm::vec2 movement{0.0f,0.0f};
-        glm::vec3 position{0.0f, 0.0f, 3.0f};
+        glm::vec3 position{0.0f, 0.0f, 4.0f};
 
 };

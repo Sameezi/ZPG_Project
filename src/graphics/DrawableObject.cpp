@@ -35,7 +35,12 @@ void DrawableObject::draw(ShaderProgram& fallbackShader){
     ShaderProgram& shader = m_shader ? *m_shader : fallbackShader;
     shader.use();
     glm::mat4 Matrice = m_transform ? m_transform->getMatrix() : glm::mat4(1.f); // If transform is nullptr, use identity matrix 
-    shader.setMat4("modelMatrix", Matrice); 
-     
+
+    if (!dynamic_pointer_cast<InstancedModel>(m_model)) shader.setMat4("modelMatrix", Matrice); 
     m_model->draw();
+}
+
+glm::vec3 DrawableObject::getPos() const{
+    glm::mat4 m = m_transform ? m_transform->getMatrix() : glm::mat4(1.f);
+    return glm::vec3(m[3]);
 }

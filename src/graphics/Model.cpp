@@ -7,7 +7,6 @@
   **/
 
 #include "Model.h"
-
 #include <stdexcept>
 
 Model::Model(const std::vector<float>& vertices)
@@ -60,6 +59,97 @@ Model::Model(const std::vector<float>& vertices, int numFloats)
     glBindVertexArray(0);
 }
 
+bool Model::loadOBJ(const std::string& path, std::vector<Vertex>& out)
+{
+    std::ifstream file(path);
+    if (!file) return false;
+
+    std::vector<glm::vec3> positions;
+    std::vector<glm::vec2> uvs;
+    std::vector<glm::vec3> normals;
+
+    std::string line;
+    while (std::getline(file, line)) {
+        std::istringstream ss(line);
+        std::string type;
+        ss >> type;
+
+        if (type == "v") {
+            glm::vec3 p;
+            ss >> p.x >> p.y >> p.z;
+            positions.push_back(p);
+        }
+        else if (type == "vt") {
+            glm::vec2 t;
+            ss >> t.x >> t.y;
+            uvs.push_back(t);
+        }
+        else if (type == "vn") {
+            glm::vec3 n;
+            ss >> n.x >> n.y >> n.z;
+            normals.push_back(n);
+        }
+        else if (type == "f") {
+            std::string vert;
+            std::vector<Vertex> face;
+
+            while (ss >> vert) {
+                // formát p/t/n
+                int pi = 0, ti = 0, ni = 0;
+                if (sscanf(vert.c_str(), "%d/%d/%d", &pi, &ti, &ni) != 3)
+                    return false;   
+
+                Vertex v;
+                v.position = positions[pi - 1];  
+                v.uv       = uvs[ti - 1];
+                v.normal   = normals[ni - 1];
+                face.push_back(v);
+            }
+
+           
+            for (size_t i = 1; i + 1 < face.size(); ++i) {
+                out.push_back(face[0]);
+                out.push_back(face[i]);
+                out.push_back(face[i + 1]);
+            }
+        }
+    }
+    return true;
+}
+
+        
+Model::Model(const std::string& modPath, const std::string& texPath)
+{
+    std::vector<Vertex> vertices;
+    loadOBJ(modPath, vertices);
+
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex),
+                vertices.data(), GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);   // position
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                        (void*)offsetof(Vertex, position));
+    glEnableVertexAttribArray(1);   // uv
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                        (void*)offsetof(Vertex, uv));
+    glEnableVertexAttribArray(2);   // normal
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                        (void*)offsetof(Vertex, normal));
+
+    glBindVertexArray(0);
+    vertexCount = (GLsizei)vertices.size();
+
+    auto texture = std::make_unique<Texture>(texPath);
+    m_texture = std::move(texture);
+}
+
+
+
 Model::~Model() {
     if (vbo != 0) {
         glDeleteBuffers(1, &vbo);
@@ -70,6 +160,7 @@ Model::~Model() {
 }
 
 void Model::draw() const {
+    if (m_texture) m_texture->bind(0);
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLES, 0, vertexCount);
     glBindVertexArray(0);

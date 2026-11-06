@@ -8,6 +8,7 @@
 
 #include "ShaderProgram.h"
 #include "core/Camera.h"
+#include "Light.h"
 
 ShaderProgram::ShaderProgram(const std::string& vertexSource,const std::string& fragmentSource, Camera* camera):
 	vertexShader(ShaderType::Vertex, vertexSource),
@@ -35,14 +36,26 @@ ShaderProgram::ShaderProgram(const std::string& vertexSource,const std::string& 
 	m_camera = camera;
 	if (m_camera) m_camera->addObserver(this);	
 
-	if (m_camera != nullptr){
+	if (m_camera != nullptr){ 
 	GLint location = glGetUniformLocation(id,"viewPos");
 		if(location != -1){
-			viewPosExist = 1;
+			viewUfExist = 1;
 		}
 	location = glGetUniformLocation(id,"lightPos");
 		if(location != -1){
-			lightPosExist = 1;
+			lightUfExist = 1;
+		}
+	location = glGetUniformLocation(id, "textureUnitID");
+		if(location != -1){
+			texUfExist = 1;
+		}
+	location = glGetUniformLocation(id, "modelMatrix");
+		if(location != -1){
+			modelUfExist = 1;
+		}
+	location = glGetAttribLocation(id, "instanceMatrix");
+		if(location != -1){
+			modelUfExist = 1;
 		}
 	}
 }
@@ -55,13 +68,17 @@ ShaderProgram::~ShaderProgram(){
 }
 
 void ShaderProgram::use() const{
+    if(texUfExist){
+	GLint location = glGetUniformLocation(id,"textureUnitID");
+	glUniform1i(location, 0);
+	}
 	glUseProgram(id);
 }
 
 void ShaderProgram::setMat4(const std::string& name, const glm::mat4& mat) const {
     GLint location = glGetUniformLocation(id, name.c_str());
 	if(location == -1){
-		std::cerr << "Unhandled error! Couldn't find uniform value:"  << name << " in shader: " << this->id<< std::endl;
+		std::cerr << "Unhandled error! Couldn't find uniform value: "  << name << " in shader: " << this->id<< std::endl;
 		exit(EXIT_FAILURE);
 	}
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(mat));
@@ -70,7 +87,7 @@ void ShaderProgram::setMat4(const std::string& name, const glm::mat4& mat) const
 void ShaderProgram::setVec3(const std::string& name, const glm::vec3& v) const {
 	GLint location = glGetUniformLocation(id, name.c_str());
 	if(location == -1){
-		std::cerr << "Unhandled error! Couldn't find uniform value:"  << name << " in shader: " << this->id<< std::endl;
+		std::cerr << "Unhandled error! Couldn't find uniform value: "  << name << " in shader: " << this->id<< std::endl;
 		exit(EXIT_FAILURE);
 	}
     glUniform3fv(glGetUniformLocation(id, name.c_str()), 1, glm::value_ptr(v));
@@ -113,15 +130,25 @@ void ShaderProgram::setTime(float time){
 	glUniform1f(location, time);
 }
 
-void ShaderProgram::update(Camera& camera) const{
+void ShaderProgram::update(const Camera& camera) {
 	use();
 	setMat4("projectionMatrix",camera.getProjMatrix());
+	
+	if(modelUfExist){ // If not skybox
 	setMat4("viewMatrix",camera.getViewMatrix());
+	}else{ // If skybox, then cut translation
+	glm::mat4 view = glm::mat4(glm::mat3(camera.getViewMatrix()));
+	setMat4("viewMatrix",view);
+	}
 
-	if(viewPosExist){
+	if(viewUfExist){ // For lighting
 		setVec3("viewPos", camera.getPos());
 	}
-	if(lightPosExist){
-		setVec3("lightPos", glm::vec3(0.0,0.0,0.0)); 
+}
+
+void ShaderProgram::update(const Light& light) {
+	use();
+	if(lightUfExist){
+		setVec3("lightPos", light.getPos());
 	}
- }
+}

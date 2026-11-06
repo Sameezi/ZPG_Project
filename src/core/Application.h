@@ -40,6 +40,7 @@ class Application{
 		double m_lastX{0.0};
 		double m_lastY{0.0};
 		int fbWidth = 800, fbHeight = 600;
-		
+		glm::vec3 lightPosition{0.0f};
+
 };
 

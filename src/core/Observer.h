@@ -1,9 +1,9 @@
 #pragma once
 
-class Camera;
+template <typename Source>
 
 class Observer{
     public:
         virtual ~Observer() = default;
-        virtual void update(Camera& source) const = 0;
+        virtual void update(const Source& source) = 0;
 };

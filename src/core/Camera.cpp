@@ -8,17 +8,17 @@
 
 #include "Camera.h"
 
-void Camera::addObserver(Observer* obs){
+void Camera::addObserver(Observer<Camera>* obs){
     observers.push_back(obs);
     obs->update(*this);
 }
 
-void Camera::delObserver(Observer* obs){
+void Camera::delObserver(Observer<Camera>* obs){
     //Later
 }
 
 void Camera::notify(){
-    for (Observer* obs : observers){
+    for (Observer<Camera>* obs : observers){
         obs->update(*this);
     } 
 }
@@ -36,7 +36,7 @@ void Camera::setProjMatrix(glm::mat4 proj){
     notify();
 }
 
-glm::vec3 Camera::getFront(){
+glm::vec3 Camera::getFront() const{
     return glm::normalize(glm::vec3{
         cos(glm::radians(yaw)) * cos(glm::radians(pitch)),
         sin(glm::radians(pitch)),
@@ -79,7 +79,7 @@ void Camera::update(float deltaTime){
     updateView();
 }
 
-glm::vec3 Camera::getPos(){
+glm::vec3 Camera::getPos() const{
     return position;
 }
 

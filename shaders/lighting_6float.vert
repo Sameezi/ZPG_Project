@@ -17,6 +17,6 @@ void main()
     vec4 world = modelMatrix * vec4(position, 1.0);
     worldPos = world.xyz;
     mat3 normalMatrix = transpose(inverse(mat3(modelMatrix)));
-    worldNorm = normalize(normalMatrix * normal); 
+    worldNorm = normalize(normalMatrix * normal);
     gl_Position  =  projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
 }

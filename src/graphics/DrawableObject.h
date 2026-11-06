@@ -10,9 +10,11 @@
 #include <memory>
 
 #include "Model.h"
+#include "InstancedModel.h"
 #include "ShaderProgram.h"
 #include "transformation/Transform.h"
 
+class ShaderProgram;
 class DrawableObject{
     public:
     // uses its own shader, built from source
@@ -25,6 +27,9 @@ class DrawableObject{
         void setTransform(std::shared_ptr<Transform> t);
         void setTime(float time);
 
+        glm::vec3 getPos() const;
+        void setPos(glm::vec3 pos) const;
+
         DrawableObject(const DrawableObject&) = delete;
         DrawableObject& operator=(const DrawableObject&) = delete;
         DrawableObject(DrawableObject&&) = default;
@@ -32,7 +37,7 @@ class DrawableObject{
 
     private:
        std::shared_ptr<Model> m_model; 
-       std::shared_ptr<ShaderProgram> m_shader;
        std::shared_ptr<Transform> m_transform;
-       glm::vec3 position{0.0f}; 
+    protected:
+        std::shared_ptr<ShaderProgram> m_shader;
 };

@@ -9,8 +9,10 @@
 #include "core/Observer.h"
 
 
+
 class Camera;
-class ShaderProgram : public Observer {
+class Light;
+class ShaderProgram : public Observer<Camera>, public Observer<Light> {
 	public:
 		ShaderProgram(const std::string& vertexSource,const std::string& fragmentSource, Camera* camera = nullptr);
 		~ShaderProgram();
@@ -33,14 +35,17 @@ class ShaderProgram : public Observer {
 
 		void setTime(float time);
 
-		void update(Camera& camera) const override; 
+		void update(const Camera& camera) override; 
+		void update(const Light& light) override;
 
 	private:
-		Camera* m_camera{nullptr};
+		Camera* m_camera;
 		Shader vertexShader;
 		Shader fragmentShader;
-		GLint viewPosExist{0};
-		GLint lightPosExist{0};
+		GLint viewUfExist{0};
+		GLint lightUfExist{0};
+		GLint texUfExist{0};
+		GLint modelUfExist{0};
 		GLuint id{0};
 	
 };

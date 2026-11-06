@@ -18,6 +18,10 @@ src/graphics/Model.cpp
 src/graphics/Shader.cpp
 src/graphics/ShaderProgram.cpp
 src/graphics/InstancedModel.cpp
+src/graphics/Light.cpp
+src/graphics/Texture.cpp
+src/graphics/Cubemap.cpp
+src/graphics/Skybox.cpp
 src/transformation/Rotation.cpp
 src/transformation/Scaling.cpp
 src/transformation/Translation.cpp
