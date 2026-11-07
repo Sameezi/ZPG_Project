@@ -148,7 +148,34 @@ Model::Model(const std::string& modPath, const std::string& texPath)
     m_texture = std::move(texture);
 }
 
+Model::Model(const std::vector<float>& vertices, const std::string& texPath)
+{
+    if (vertices.empty() || vertices.size() % 8 != 0) {
+        throw std::invalid_argument("Model vertices must contain complete position+normal+uv data");
+    }
 
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(vertices.size() * sizeof(float)), vertices.data(), GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glBindVertexArray(0);
+
+    vertexCount = (GLsizei)vertices.size();
+
+    auto texture = std::make_unique<Texture>(texPath);
+    m_texture = std::move(texture);
+}
 
 Model::~Model() {
     if (vbo != 0) {

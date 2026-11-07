@@ -17,6 +17,7 @@ class Model{
         Model(const std::vector<float>& vertices);
         Model(const std::vector<float>& vertices, int numFloats);
         Model(const std::string& modPath, const std::string& texPath);
+        Model(const std::vector<float>& vertices, const std::string& texPath);
 
         virtual ~Model();
 

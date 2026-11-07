@@ -88,6 +88,9 @@ int Application::init(){
 
 
 	// Get version info
+	int a;
+	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &a);
+	printf("Texture units: %d\n", a);
 	printf("OpenGL Version: %s\n", glGetString(GL_VERSION));
 	printf("Vendor %s\n", glGetString(GL_VENDOR));
 	printf("Renderer %s\n", glGetString(GL_RENDERER));
@@ -310,22 +313,21 @@ void Application::addScenes(){
 	 glm::vec3 groundColor = {0.16f, 0.32f, 0.0f};
 	 glm::vec3 n(0.0f, 0.0f, 1.0f);
 	 std::vector<float> groundVertices = {
-		0.0f, 0.5f, 1.0f, groundColor.x,groundColor.y,groundColor.z,n.x,n.y,n.z,
-		-0.5f, 0.5f, 1.0f, groundColor.x,groundColor.y,groundColor.z,n.x,n.y,n.z,
-		-0.5f, 0.0f, 1.0f,groundColor.x,groundColor.y,groundColor.z, n.x,n.y,n.z,
-		0.0f, 0.0f, 1.0f,groundColor.x,groundColor.y,groundColor.z, n.x,n.y,n.z,
-		0.0f, 0.5f, 1.0f,groundColor.x,groundColor.y,groundColor.z, n.x,n.y,n.z,
-		-0.5f, 0.0f, 1.0f,groundColor.x,groundColor.y,groundColor.z ,n.x,n.y,n.z
+		0.0f, 0.5f, 1.0f, n.x,n.y,n.z, 0.0f, 0.0f,
+		-0.5f, 0.5f, 1.0f, n.x,n.y,n.z,1.0f, 0.0f,
+		-0.5f, 0.0f, 1.0f,n.x,n.y,n.z,1.0f, 1.0f,
+		0.0f, 0.0f, 1.0f,n.x,n.y,n.z, 0.0f, 1.0f,
+		0.0f, 0.5f, 1.0f,n.x,n.y,n.z, 0.0f, 0.0f,
+		-0.5f, 0.0f, 1.0f,n.x,n.y,n.z, 1.0f,1.0f
 	 };
 	 auto composite = std::make_shared<TransformComposite>();
 	 composite->addNode(std::make_shared<Translation>(glm::vec3(25.0f,-100.0f,25.0f)));
 	 composite->addNode(std::make_shared<Rotation>(glm::radians(-90.0f), glm::vec3(1,0,0)));
 	 composite->addNode(std::make_shared<Scaling>(100.0f));
-	 auto shader = std::make_shared<ShaderProgram>("shaders/lighting_9float.vert","shaders/diffuse_point.frag",m_scenes[1]->getCamera());
+	 auto shader = std::make_shared<ShaderProgram>("shaders/tex.vert","shaders/tex.frag",m_scenes[1]->getCamera());
 	 m_scenes[1]->addObject("ground", 
-	 std::make_unique<DrawableObject>(std::make_shared<Model>(groundVertices,9),shader)	
+	 std::make_unique<DrawableObject>(std::make_shared<Model>(groundVertices,"../textures/grass.jpg"),shader)	
 	 ).setTransform(composite);
-	 m_scenes[1]->getLightObject("firefly").addObserver(shader.get());
 	}
 	// Creating nicer trees
 	{
@@ -337,7 +339,7 @@ void Application::addScenes(){
 	 );
 	 auto treeModel = std::make_shared<InstancedModel>(treeVertices);
 	 std::vector<TransformComposite> composites;
-	 for(int i = 0; i <= 10; i++){
+	 for(int i = 0; i <= 73; i++){
 	 float randomScale = randomFloat(0.1f, 0.25f); 
 	 float randomZ = randomFloat(-25.0f, 25.0f);
 	 float randomX = randomFloat(-25.0f, 25.0f);
@@ -355,20 +357,6 @@ void Application::addScenes(){
 	 }
 	 // Adding clock
 	 {
-	 std::vector<float> clockVertices(clockModel, clockModel + sizeof(clockModel) / sizeof(float));
-	 auto shader = std::make_shared<ShaderProgram>("shaders/clock.vert","shaders/clock.frag",m_scenes[1]->getCamera());
-	 auto model = std::make_shared<Model>(clockVertices,9);
-	 auto composite = std::make_shared<TransformComposite>();
-	 composite->addNode(std::make_shared<Translation>(glm::vec3(.0f,3.0f,.0f)));
-	 composite->addNode(std::make_shared<Scaling>(glm::vec3(-1,1,1)));
-	 m_scenes[1]->addObject("clock1", std::make_unique<DrawableObject>(model,shader)).setTransform(composite);
-
-	 auto composite2 = std::make_shared<TransformComposite>();
-	 composite2->addNode(std::make_shared<Translation>(glm::vec3(2.0f,3.0f,.0f)));
-	 composite2->addNode(std::make_shared<Scaling>(glm::vec3(-1,1,1)));
-	 m_scenes[1]->addObject("clock2", std::make_unique<DrawableObject>(model,shader)).setTransform(composite2);
-	 }
-	 {
 	 auto shader = std::make_shared<ShaderProgram>("shaders/tex.vert","shaders/tex.frag",m_scenes[1]->getCamera());
 	 auto model = std::make_shared<Model>("../models/shrek.obj","../textures/shrek.png");
 	 auto composite = std::make_shared<TransformComposite>();
@@ -376,6 +364,7 @@ void Application::addScenes(){
 	 composite->addNode(std::make_shared<Scaling>(glm::vec3(-1,1,1)));
 	 m_scenes[1]->addObject("shrek", std::make_unique<DrawableObject>(model,shader)).setTransform(composite);
 	 }
+
 	 {
 		auto shader = std::make_shared<ShaderProgram>("shaders/tex.vert","shaders/tex.frag",m_scenes[1]->getCamera());
 		auto model = std::make_shared<Model>("../models/fiona.obj","../textures/fiona.png");
@@ -384,7 +373,8 @@ void Application::addScenes(){
 		composite->addNode(std::make_shared<Scaling>(glm::vec3(-1,1,1)));
 		m_scenes[1]->addObject("fiona", std::make_unique<DrawableObject>(model,shader)).setTransform(composite);
 	}
-	{
+
+	{ // skybox making
 		auto shader = std::make_unique<ShaderProgram>("shaders/skybox.vert","shaders/skybox.frag",m_scenes[1]->getCamera());
 		std::string folderPath = "../textures/cubemaps/forest/";
 		std::vector<std::string> faces = {
@@ -399,33 +389,11 @@ void Application::addScenes(){
 		auto skybox = std::make_shared<Skybox>("../models/skybox.obj",std::make_unique<Cubemap>(faces), std::move(shader));
 		m_scenes[1]->addSkybox(skybox);
 	}
-
-	 
-	/////////// Setting up light example scene 
-	m_scenes[2]->init();
-	{
-		std::vector<float> sphereVertices(sphere, sphere+ (sizeof(sphere) / sizeof(float)));
-		auto shader = std::make_shared<ShaderProgram>("shaders/lighting_6float.vert","shaders/phong_point.frag",m_scenes[2]->getCamera());
-
-		auto model = std::make_shared<Model>(sphereVertices);
-		
-		float coords[8] = {1.0f,0.0f,-1.0f,0.0f,0.0f,1.0f,0.0f,-1.0f};
-		int idx = 0;
-		for(int i = 0; i <= 3; i++){
-			std::string name = "sphere" + std::to_string(i);
-			auto composite = std::make_shared<TransformComposite>();
-			int x = coords[idx++];
-			int y = coords[idx++];
-			composite->addNode(std::make_shared<Translation>(glm::vec3(x,y,0.0f)));
-			composite->addNode(std::make_shared<Scaling>(glm::vec3(0.50f,0.50f,0.50f)));
-			m_scenes[2]->addObject(name, std::make_unique<DrawableObject>(model,shader)).setTransform(composite);
-		}
-	 }
 	
-			glm::mat4 proj = glm::perspective(glm::radians(60.0f),
-                                800.0f / 600.0f,
-                                0.1f, 100.0f);
-	 this->main_scene = m_scenes[1];
+	glm::mat4 proj = glm::perspective(glm::radians(60.0f),
+ 		                               800.0f / 600.0f,
+  		                               0.1f, 100.0f);
+	this->main_scene = m_scenes[0];
 	for(auto& scene: m_scenes){
 		scene->getCamera()->setProjMatrix(proj);
 	}
