@@ -7,7 +7,8 @@
   **/
 
 #include "Skybox.h"
-#include <stdexcept>
+
+
 
 bool Skybox::loadOBJ(const std::string& path, std::vector<glm::vec3>& out)
 {
@@ -34,7 +35,7 @@ bool Skybox::loadOBJ(const std::string& path, std::vector<glm::vec3>& out)
                 int pi = 0;
                 if (sscanf(vert.c_str(), "%d", &pi) != 1) return false;
 
-                // záporné indexy v OBJ = odzadu
+                
                 int idx = (pi > 0) ? pi - 1 : (int)positions.size() + pi;
                 if (idx < 0 || idx >= (int)positions.size()) return false;
 
@@ -51,10 +52,13 @@ bool Skybox::loadOBJ(const std::string& path, std::vector<glm::vec3>& out)
     return true;
 }
 
-Skybox::Skybox(const std::string& modPath, std::unique_ptr<Cubemap> c, std::unique_ptr<ShaderProgram> sh )
+Skybox::Skybox(const std::string& modelPath, Cubemap& cubemap, ShaderProgram& shader)
+    : m_cubemap(&cubemap)
+    , m_shader(&shader)
 {
     std::vector<glm::vec3> vertices;
-    loadOBJ(modPath, vertices);
+    if (!loadOBJ(modelPath, vertices))
+        throw std::runtime_error("Skybox: failed to load " + modelPath);
 
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
@@ -62,42 +66,35 @@ Skybox::Skybox(const std::string& modPath, std::unique_ptr<Cubemap> c, std::uniq
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3),
-                vertices.data(), GL_STATIC_DRAW);
+                 vertices.data(), GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);   // position
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3),
-                        (void*)offsetof(Vertex, position));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
 
     glBindVertexArray(0);
     vertexCount = (GLsizei)vertices.size();
-
-    m_cubemap = std::move(c);
-    m_shader = std::move(sh);
 }
 
-
 Skybox::~Skybox() {
-    if (vbo != 0) {
-        glDeleteBuffers(1, &vbo);
-    }
-    if (vao != 0) {
-        glDeleteVertexArrays(1, &vao);
-    }
+    if (vbo != 0) glDeleteBuffers(1, &vbo);
+    if (vao != 0) glDeleteVertexArrays(1, &vao);
+}
+
+void Skybox::setTransform(std::shared_ptr<Transform> t) {
+    m_transform = std::move(t);
 }
 
 void Skybox::draw() const {
     glDepthMask(GL_FALSE);
+
     m_shader->use();
+    m_cubemap->bind(0);
 
     glBindVertexArray(vao);
-    if (m_cubemap) m_cubemap->bind(0);
     glDrawArrays(GL_TRIANGLES, 0, vertexCount);
-    glDepthMask(GL_TRUE);
     glBindVertexArray(0);
-}
 
-void Skybox::setTransform(std::unique_ptr<Transform> t){
-    m_transform = std::move(t);
+    glDepthMask(GL_TRUE);
 }
 
 

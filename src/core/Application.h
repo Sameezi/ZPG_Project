@@ -12,8 +12,21 @@
 #include <vector>
 #include <chrono>
 #include <ctime>
+#include <stdexcept>
 
+#include "Window.h"
 #include "Scene.h"
+
+#include "ResourceManager.hpp"
+
+
+struct Resources {
+    ResourceManager<ShaderProgram> shaders;
+    ResourceManager<Texture>       textures;
+    ResourceManager<Cubemap>       cubemaps;
+    ResourceManager<Model>         models;
+	ResourceManager<InstancedModel> imodels;
+};
 
 class Application{
 	public:
@@ -31,7 +44,8 @@ class Application{
 		static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 		void onResize(int width, int height);
 	private:
-		GLFWwindow* window{nullptr};
+		Window window;	
+		Resources resources;
 		Scene* main_scene;
 		std::vector<Scene*> m_scenes;
 		int currentScene{0};
@@ -39,7 +53,7 @@ class Application{
 		bool m_dragging{false};
 		double m_lastX{0.0};
 		double m_lastY{0.0};
-		int fbWidth = 800, fbHeight = 600;
+		int fbWidth = 1366, fbHeight = 768;
 		glm::vec3 lightPosition{0.0f};
 
 };

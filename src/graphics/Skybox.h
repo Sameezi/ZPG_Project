@@ -14,18 +14,19 @@
 
 class Skybox{
     public:
-        Skybox(const std::string& modPath, std::unique_ptr<Cubemap> c, std::unique_ptr<ShaderProgram> sh );
+        Skybox(const std::string& modPath, Cubemap& cubemap, ShaderProgram& shader);
         ~Skybox();
 
         void draw() const; 
-        void setTransform(std::unique_ptr<Transform> t);
+        void setTransform(std::shared_ptr<Transform> t);
     private:
         std::vector<float> m_vertices;
         GLuint vbo{0};
         GLuint vao{0};
         GLsizei vertexCount{0};
-        std::unique_ptr<ShaderProgram> m_shader;
-        std::unique_ptr<Cubemap> m_cubemap;
-        std::unique_ptr<Transform> m_transform;
-        bool loadOBJ(const std::string& path, std::vector<glm::vec3>& out);
+
+        ShaderProgram* m_shader;
+        Cubemap* m_cubemap;
+        std::shared_ptr<Transform> m_transform;
+        static bool loadOBJ(const std::string& path, std::vector<glm::vec3>& out);
 };

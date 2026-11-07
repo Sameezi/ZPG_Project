@@ -24,11 +24,20 @@ class Model{
         Model(const Model&) = delete;
         Model& operator=(const Model&) = delete;
 
+        void addTexture(GLuint unit, std::shared_ptr<Texture> texture);
+        void addTexture(GLuint unit, const std::string& path);
+        void removeTexture(GLuint unit);
+
         virtual void draw() const; 
     private:
+        struct TextureSlot {
+            GLuint unit;
+            std::shared_ptr<Texture> texture;
+        };
+
         std::vector<float> m_vertices;
         GLuint vbo{0};
-        std::unique_ptr<Texture> m_texture;
+        std::vector<TextureSlot> m_textures;
         bool loadOBJ(const std::string& path, std::vector<Vertex>& out);
     protected:
         GLsizei vertexCount{0};

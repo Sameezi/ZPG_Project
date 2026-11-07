@@ -13,6 +13,7 @@ src/main.cpp
 src/core/Application.cpp 
 src/core/Scene.cpp 
 src/core/Camera.cpp
+src/core/Window.cpp
 src/graphics/DrawableObject.cpp
 src/graphics/Model.cpp
 src/graphics/Shader.cpp

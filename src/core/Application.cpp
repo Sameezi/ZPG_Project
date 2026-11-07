@@ -36,56 +36,24 @@
 #include "graphics/Cubemap.h"
 #include "graphics/Skybox.h"
 
-Application::Application() = default;
+Application::Application() :  window(1366,768,"ZPG") {}
 
 Application::~Application(){
-	if (window != nullptr) {
-		glfwDestroyWindow(window);
-	}
-	glfwTerminate();
-	delete(this->main_scene);
+	for(auto& scene: m_scenes)
+		delete(scene);
 }
 
 int Application::init(){
-	// Initialize GLFW
-	if (!glfwInit()){
-		exit(EXIT_FAILURE);
-	}
-	
-	/*
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	glfwWindowHint(GLFW_OPENGL_PROFILE,
-	GLFW_OPENGL_CORE_PROFILE);  //*/
+	GLFWwindow* win = window.get();
+	glfwSetWindowUserPointer(win,this);
+	glfwSetMouseButtonCallback(win, Application::mouseButtonCallback);
+	glfwSetCursorPosCallback(win, Application::cursorPosCallback);
+	glfwSetFramebufferSizeCallback(win, Application::framebufferSizeCallback);
 
-	// Create a window
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-	this->window = glfwCreateWindow(1366,768,"ZPG",NULL,NULL);
-	if (!window){
-		glfwTerminate();
-		exit(EXIT_FAILURE);
-	}
-
-	glfwSetWindowUserPointer(window,this);
-	glfwSetMouseButtonCallback(window, Application::mouseButtonCallback);
-	glfwSetCursorPosCallback(window, Application::cursorPosCallback);
-	glfwSetFramebufferSizeCallback(window, Application::framebufferSizeCallback);
-
-	glfwMakeContextCurrent(window);
-	glfwSwapInterval(1);
-
-
-	
 	// Initialize GLAD and load OpenGL function pointers
 	if (!gladLoadGL(glfwGetProcAddress)) {
-		std::cout << "Failed to inititalize GLAD" << std::endl;
-		glfwDestroyWindow(window);
-		window = nullptr;
-		glfwTerminate();
-		return -1;
+		 throw std::runtime_error("Failed to initialize GLAD");
 	}
-
 
 	// Get version info
 	int a;
@@ -147,9 +115,10 @@ void Application::onResize(int width, int height)
 
 void Application::processInput(){
 
+	GLFWwindow* win = window.get();
 	float cameraSpeed = 0.05f;
-	bool shiftHeld = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
-                 glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
+	bool shiftHeld = glfwGetKey(win, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
+                 glfwGetKey(win, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
 
 	if (shiftHeld) {
 	    cameraSpeed = .50f; 
@@ -158,10 +127,10 @@ void Application::processInput(){
 	}
 
 	glm::vec2 movement{0.0f, 0.0f};
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) movement.x += 1.0f;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) movement.x -= 1.0f;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) movement.y += 1.0f;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) movement.y -= 1.0f;
+    if (glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS) movement.x += 1.0f;
+    if (glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS) movement.x -= 1.0f;
+    if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS) movement.y += 1.0f;
+    if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS) movement.y -= 1.0f;
 
 	if (glm::length(movement) > 0.0f) {
         movement = glm::normalize(movement);
@@ -169,17 +138,17 @@ void Application::processInput(){
 
 	main_scene->getCamera()->setMovement(movement * cameraSpeed);
 
-	if(glfwGetKey(window,GLFW_KEY_1) == GLFW_PRESS){
+	if(glfwGetKey(win,GLFW_KEY_1) == GLFW_PRESS){
 		glm::vec4 backgroundColor = this->main_scene->getBackgroundColor();
 	 	glClearColor(backgroundColor.x,backgroundColor.y,backgroundColor.z,backgroundColor.w);
 		this->main_scene = m_scenes[0];
 	}
-	if(glfwGetKey(window,GLFW_KEY_2) == GLFW_PRESS){
+	if(glfwGetKey(win,GLFW_KEY_2) == GLFW_PRESS){
 		glm::vec4 backgroundColor = this->main_scene->getBackgroundColor();
     	glClearColor(backgroundColor.x,backgroundColor.y,backgroundColor.z,backgroundColor.w);
 		this->main_scene = m_scenes[1];
 	}
-	if(glfwGetKey(window,GLFW_KEY_3) == GLFW_PRESS){
+	if(glfwGetKey(win,GLFW_KEY_3) == GLFW_PRESS){
 		glm::vec4 backgroundColor = this->main_scene->getBackgroundColor();
     	glClearColor(backgroundColor.x,backgroundColor.y,backgroundColor.z,backgroundColor.w);
 		this->main_scene = m_scenes[2];
@@ -214,50 +183,91 @@ void Application::addScenes(){
      std::vector<float> moonVertices(moon,moon + (sizeof(moon) / sizeof(float)));
 	 std::vector<float> loginVertices(login,login + (sizeof(login) / sizeof(float)));
 	 std::vector<float> rocketVertices(rocket, rocket + (sizeof(rocket) / sizeof(float)));
+	 std::vector<float> sphereVertices(sphere, sphere+ (sizeof(sphere) / sizeof(float)));
+	 std::vector<float> treeVertices(tree, tree+ (sizeof(tree) / sizeof(float)));
+
+     glm::vec3 n(0.0f, 0.0f, 1.0f);
+	 glm::vec3 groundColor = {0.16f, 0.32f, 0.0f};
+	 std::vector<float> groundVertices = {
+		0.0f, 0.5f, 1.0f, n.x,n.y,n.z, 0.0f, 0.0f,
+		-0.5f, 0.5f, 1.0f, n.x,n.y,n.z,1.0f, 0.0f,
+		-0.5f, 0.0f, 1.0f,n.x,n.y,n.z,1.0f, 1.0f,
+		0.0f, 0.0f, 1.0f,n.x,n.y,n.z, 0.0f, 1.0f,
+		0.0f, 0.5f, 1.0f,n.x,n.y,n.z, 0.0f, 0.0f,
+		-0.5f, 0.0f, 1.0f,n.x,n.y,n.z, 1.0f,1.0f
+	 };
+
+	 auto& modelManager = resources.models;
+	 auto& sun = modelManager.load("sun",sunVertices,9);
+	 auto& moon = modelManager.load("moon",moonVertices,9);
+	 auto& earth = modelManager.load("earth",earthVertices,9);
+	 auto& login = modelManager.load("login",loginVertices,6);
+	 auto& rocket = modelManager.load("rocket",rocketVertices,9); 
+	 auto& sphere = modelManager.load("sphere",sphereVertices);
+	 auto& trees = resources.imodels.load("trees",treeVertices);
+	 auto& shrek = modelManager.load("shrek","../models/shrek.obj","../textures/shrek.png");
+	 auto& fiona = modelManager.load("fiona","../models/fiona.obj","../textures/fiona.png");
+	 auto& ground = modelManager.load("ground",groundVertices,"../textures/grass.jpg");
+	 auto& eb408 = modelManager.load("eb408","../models/eb408.obj","../textures/T_EB408.png");
+	 auto& chair = modelManager.load("chair","../models/OrangeChair.obj","../textures/T_OrangeChair_BaseColor.png");
+	 auto& table = modelManager.load("table","../models/table.obj","../textures/T_Table_BaseColor.png");
+	 auto& whiteboard = modelManager.load("whiteboard","../models/Whiteboard.obj","../textures/T_Whiteboard_BaseColor.png");
+	 auto& door = modelManager.load("door","../models/Door.obj","../textures/T_door_basecolor.png");
+
+	 auto& shaderManager = resources.shaders;
+	 auto& phong = shaderManager.load("phong",  "shaders/lighting_9float.vert",  "shaders/phong.frag");
+	 auto& ambient = shaderManager.load("ambient", "shaders/lighting_9float.vert", "shaders/ambient.frag");
+	 auto& blinPhong = shaderManager.load("blinphong", "shaders/lighting_9float.vert", "shaders/blinn_phong.frag");
+	 auto& blinPhong_2 = shaderManager.load("blinphong_2", "shaders/lighting_6float.vert", "shaders/blinn_phong.frag");
+	 auto& diffuse = shaderManager.load("diffuse","shaders/lighting_6float.vert","shaders/diffuse.frag");
+     auto& textureShader = shaderManager.load("texture","shaders/tex.vert","shaders/texture.frag");
+	 auto& treecolor = shaderManager.load("treecolor","shaders/treeColored.vert","shaders/treeColored.frag");
+	 auto& skyShader = resources.shaders.load("skybox", "shaders/skybox.vert", "shaders/skybox.frag");
+	 
+	 std::string folderPath = "../textures/cubemaps/forest/";
+		std::vector<std::string> faces = {
+			folderPath + "posx.jpg", 
+			folderPath + "negx.jpg", 
+			folderPath + "posy.jpg",
+			folderPath + "negy.jpg",
+			folderPath + "posz.jpg",
+			folderPath + "negz.jpg"
+		};
+	 auto& skyTex = resources.cubemaps.load("sky", faces);
 
 	 // Space example
 	 m_scenes.push_back(new Scene());
 	 // Forest example
 	 m_scenes.push_back(new Scene());
-	 // Lighting example
+	 // Classroom example
 	 m_scenes.push_back(new Scene());
 
-	 m_scenes[0]->init();
-	  auto phongShader = std::make_shared<ShaderProgram>
-	 (
-		"shaders/lighting_9float.vert",
-		"shaders/phong_point.frag",
-		m_scenes[0]->getCamera()
-	 );
-	 auto ambientShader = std::make_shared<ShaderProgram>
-	 (
-		"shaders/lighting_9float.vert",
-		"shaders/ambient.frag",
-		m_scenes[0]->getCamera()
-	 );
-	 auto blinPhongShader = std::make_shared<ShaderProgram>
-	 (
-		"shaders/lighting_6float.vert",
-		"shaders/phong_point.frag",
-		m_scenes[0]->getCamera()
-	 );
-	 
-     // Creating sun
-	 m_scenes[0]->addObject("sun",std::make_unique<DrawableObject>(std::make_shared<Model>(sunVertices,9),ambientShader));
-	 // Creating earth
-	 m_scenes[0]->addObject("moon",std::make_unique<DrawableObject>(std::make_shared<Model>(moonVertices,9),phongShader));
-	 // Creating moon
-	 m_scenes[0]->addObject("earth",std::make_unique<DrawableObject>(std::make_shared<Model>(earthVertices,9),phongShader));
-	 // Creating login
-	 m_scenes[0]->addObject("login",std::make_unique<DrawableObject>(std::make_shared<Model>(loginVertices,6),blinPhongShader));
-	 // Creating rocket
-	 m_scenes[0]->addObject("rocket",std::make_unique<DrawableObject>(std::make_shared<Model>(rocketVertices,9),phongShader));
-	{												
+	glm::mat4 proj = glm::perspective(glm::radians(60.0f),
+ 		                               800.0f / 600.0f,
+  		                               0.1f, 100.0f);
+	for(auto& scene : m_scenes){
+		scene->init();
+		scene->getCamera()->setProjMatrix(proj);
+	}
+
+	// Creating the space scene
+
+	 m_scenes[0]->addObject("sun",std::make_unique<Light>(sun,ambient));
+	 m_scenes[0]->addObject("moon",std::make_unique<DrawableObject>(moon,phong));
+	 m_scenes[0]->addObject("earth",std::make_unique<DrawableObject>(earth,phong));
+	 m_scenes[0]->addObject("login",std::make_unique<DrawableObject>(login,blinPhong_2));
+	 m_scenes[0]->addObject("rocket",std::make_unique<DrawableObject>(rocket,phong));
+
+	 phong.setCamera(m_scenes[0]->getCamera());  phong.setLight(&m_scenes[0]->getLightObject("sun")); 
+	 ambient.setCamera(m_scenes[0]->getCamera()); ambient.setLight(&m_scenes[0]->getLightObject("sun")); 
+	 blinPhong_2.setCamera(m_scenes[0]->getCamera()); blinPhong_2.setLight(&m_scenes[0]->getLightObject("sun")); 
+
+	{ // TRANSFORMS 
 	//sun 
 	auto sun = std::make_shared<TransformComposite>();
 	sun->addNode(std::make_shared<Rotation>(glm::radians(70.f), glm::vec3(0.f, -1.f, 0.f), 0.3f));
 	sun->addNode(std::make_shared<Scaling>(.3f));
-	m_scenes[0]->getObject("sun").setTransform(sun);
+	m_scenes[0]->getLightObject("sun").setTransform(sun);
 
 	// earth orbit around sun
 	auto earthOrbit = std::make_shared<TransformComposite>();
@@ -296,48 +306,34 @@ void Application::addScenes(){
 	rocket->addNode(std::make_shared<Scaling>(.00009f));
 	m_scenes[0]->getObject("rocket").setTransform(rocket);
 	}
-
 	
-	 //////////////////////////////// Setting up forest scene
-	 m_scenes[1]->init();
-	{ // Creating firefly
-	  std::vector<float> sphereVertices(sphere, sphere+ (sizeof(sphere) / sizeof(float)));
-	  auto shader = std::make_shared<ShaderProgram>("shaders/lighting_6float.vert","shaders/diffuse.frag",m_scenes[1]->getCamera());
-	  auto model = std::make_shared<Model>(sphereVertices);
+	// Setting up forest scene
+	m_scenes[1]->addObject("firefly",std::make_unique<Light>(sphere,ambient));
+	m_scenes[1]->addObject("ground",std::make_unique<DrawableObject>(ground,textureShader));
+	m_scenes[1]->addObject("trees",std::make_unique<DrawableObject>(trees, treecolor));
+	m_scenes[1]->addObject("shrek", std::make_unique<DrawableObject>(shrek,textureShader));
+	m_scenes[1]->addObject("fiona", std::make_unique<DrawableObject>(fiona,textureShader));
+	m_scenes[1]->addSkybox(std::make_shared<Skybox>("../models/skybox.obj",skyTex, skyShader));
+
+	ambient.setCamera(m_scenes[1]->getCamera());
+	textureShader.setCamera(m_scenes[1]->getCamera());
+	treecolor.setCamera(m_scenes[1]->getCamera());
+	skyShader.setCamera(m_scenes[1]->getCamera());
+	
+	{ // TRANSFORMS
 	  auto composite = std::make_shared<TransformComposite>();
 	  composite->addNode(std::make_shared<Translation>(glm::vec3(.0f,25.5f,.0f)));
 	  composite->addNode(std::make_shared<Scaling>(.02f));
-	  m_scenes[1]->addObject("firefly",std::make_unique<Light>(model,shader)).setTransform(composite);
-	} 
-	{ // Creating ground
-	 glm::vec3 groundColor = {0.16f, 0.32f, 0.0f};
-	 glm::vec3 n(0.0f, 0.0f, 1.0f);
-	 std::vector<float> groundVertices = {
-		0.0f, 0.5f, 1.0f, n.x,n.y,n.z, 0.0f, 0.0f,
-		-0.5f, 0.5f, 1.0f, n.x,n.y,n.z,1.0f, 0.0f,
-		-0.5f, 0.0f, 1.0f,n.x,n.y,n.z,1.0f, 1.0f,
-		0.0f, 0.0f, 1.0f,n.x,n.y,n.z, 0.0f, 1.0f,
-		0.0f, 0.5f, 1.0f,n.x,n.y,n.z, 0.0f, 0.0f,
-		-0.5f, 0.0f, 1.0f,n.x,n.y,n.z, 1.0f,1.0f
-	 };
+	  m_scenes[1]->getLightObject("firefly").setTransform(composite);
+	}
+	{ 
 	 auto composite = std::make_shared<TransformComposite>();
 	 composite->addNode(std::make_shared<Translation>(glm::vec3(25.0f,-100.0f,25.0f)));
 	 composite->addNode(std::make_shared<Rotation>(glm::radians(-90.0f), glm::vec3(1,0,0)));
 	 composite->addNode(std::make_shared<Scaling>(100.0f));
-	 auto shader = std::make_shared<ShaderProgram>("shaders/tex.vert","shaders/tex.frag",m_scenes[1]->getCamera());
-	 m_scenes[1]->addObject("ground", 
-	 std::make_unique<DrawableObject>(std::make_shared<Model>(groundVertices,"../textures/grass.jpg"),shader)	
-	 ).setTransform(composite);
-	}
-	// Creating nicer trees
+	 m_scenes[1]->getObject("ground").setTransform(composite);
+	} 
 	{
-	 std::vector<float> treeVertices(tree, tree+ (sizeof(tree) / sizeof(float)));
-	 auto niceTree = std::make_shared<ShaderProgram>(
-    	"shaders/treeColored.vert",
-    	"shaders/treeColored.frag",
-		m_scenes[1]->getCamera()
-	 );
-	 auto treeModel = std::make_shared<InstancedModel>(treeVertices);
 	 std::vector<TransformComposite> composites;
 	 for(int i = 0; i <= 73; i++){
 	 float randomScale = randomFloat(0.1f, 0.25f); 
@@ -351,53 +347,33 @@ void Application::addScenes(){
 	 composite.addNode(std::make_shared<Scaling>(randomScale));
 	 composites.push_back(std::move(composite));
 	 }
-	 treeModel->setInstances(composites);
-	 m_scenes[1]->addObject("trees",std::make_unique<DrawableObject>(treeModel, niceTree));
-	 m_scenes[1]->getLightObject("firefly").addObserver(niceTree.get());
+	 trees.setInstances(composites);
+	 m_scenes[1]->getObject("trees");
 	 }
-	 // Adding clock
+
 	 {
-	 auto shader = std::make_shared<ShaderProgram>("shaders/tex.vert","shaders/tex.frag",m_scenes[1]->getCamera());
-	 auto model = std::make_shared<Model>("../models/shrek.obj","../textures/shrek.png");
 	 auto composite = std::make_shared<TransformComposite>();
 	 composite->addNode(std::make_shared<Translation>(glm::vec3(.0f,0.0f,.0f)));
 	 composite->addNode(std::make_shared<Scaling>(glm::vec3(-1,1,1)));
-	 m_scenes[1]->addObject("shrek", std::make_unique<DrawableObject>(model,shader)).setTransform(composite);
+	 m_scenes[1]->getObject("shrek").setTransform(composite);
+	 }
+	 { 
+	 auto composite = std::make_shared<TransformComposite>();
+	 composite->addNode(std::make_shared<Translation>(glm::vec3(3.0f,.0f,.0f)));
+	 composite->addNode(std::make_shared<Scaling>(glm::vec3(-1,1,1)));
+	 m_scenes[1]->getObject("fiona").setTransform(composite);
 	 }
 
-	 {
-		auto shader = std::make_shared<ShaderProgram>("shaders/tex.vert","shaders/tex.frag",m_scenes[1]->getCamera());
-		auto model = std::make_shared<Model>("../models/fiona.obj","../textures/fiona.png");
-		auto composite = std::make_shared<TransformComposite>();
-		composite->addNode(std::make_shared<Translation>(glm::vec3(.8f,0.0f,.0f)));
-		composite->addNode(std::make_shared<Scaling>(glm::vec3(-1,1,1)));
-		m_scenes[1]->addObject("fiona", std::make_unique<DrawableObject>(model,shader)).setTransform(composite);
-	}
+	// Setting classroom scene
+	//m_scenes[2]->addObject("classroom",std::make_unique<DrawableObject>(eb408,diffuse));
+	m_scenes[2]->addObject("door",std::make_unique<DrawableObject>(door,textureShader));
+	m_scenes[2]->addSkybox(std::make_shared<Skybox>("../models/skybox.obj",skyTex, skyShader));
 
-	{ // skybox making
-		auto shader = std::make_unique<ShaderProgram>("shaders/skybox.vert","shaders/skybox.frag",m_scenes[1]->getCamera());
-		std::string folderPath = "../textures/cubemaps/forest/";
-		std::vector<std::string> faces = {
-			folderPath + "posx.jpg", 
-			folderPath + "negx.jpg", 
-			folderPath + "posy.jpg",
-			folderPath + "negy.jpg",
-			folderPath + "posz.jpg",
-			folderPath + "negz.jpg"
-		};
-		
-		auto skybox = std::make_shared<Skybox>("../models/skybox.obj",std::make_unique<Cubemap>(faces), std::move(shader));
-		m_scenes[1]->addSkybox(skybox);
-	}
-	
-	glm::mat4 proj = glm::perspective(glm::radians(60.0f),
- 		                               800.0f / 600.0f,
-  		                               0.1f, 100.0f);
-	this->main_scene = m_scenes[0];
-	for(auto& scene: m_scenes){
-		scene->getCamera()->setProjMatrix(proj);
-	}
-	
+	textureShader.setCamera(m_scenes[2]->getCamera());
+	skyShader.setCamera(m_scenes[2]->getCamera());
+
+	main_scene = m_scenes[2];
+
 }
 
 
@@ -405,7 +381,8 @@ void Application::run(){
 	double lastTime = glfwGetTime();
 	int frameCount = 0;
 	glEnable(GL_MULTISAMPLE);
-	while (!glfwWindowShouldClose(window))
+	GLFWwindow* win = window.get();
+	while (!glfwWindowShouldClose(win))
 	{
 	// FPS
 	double now = glfwGetTime();
@@ -415,11 +392,10 @@ void Application::run(){
     if (deltaTime >= 1.0) {                 // once per second 
         double fps = frameCount / (now - lastTime);
         std::string title = "ZPG - " + std::to_string(static_cast<int>(fps)) + " FPS";
-        glfwSetWindowTitle(window, title.c_str());
+        glfwSetWindowTitle(win, title.c_str());
         frameCount = 0;
         lastTime = now;
     }
-	if(main_scene == m_scenes[1]) main_scene->getObject("clock1").setTime(secondsSinceMidnight());
 	
 	// Clear color and depth buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -434,11 +410,7 @@ void Application::run(){
 	glEnable(GL_DEPTH_TEST);
 	main_scene->draw();
 
-		std::cout << "draw calls: " << RenderStats::drawCalls
-              << ", instances: " << RenderStats::instances << '\n';
-	
-	// Display the rendered frame and process events
-	glfwSwapBuffers(window);
+	glfwSwapBuffers(win);
 	glfwPollEvents();
 	}
 }

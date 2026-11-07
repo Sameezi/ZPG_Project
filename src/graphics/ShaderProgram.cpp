@@ -10,7 +10,7 @@
 #include "core/Camera.h"
 #include "Light.h"
 
-ShaderProgram::ShaderProgram(const std::string& vertexSource,const std::string& fragmentSource, Camera* camera):
+ShaderProgram::ShaderProgram(const std::string& vertexSource,const std::string& fragmentSource):
 	vertexShader(ShaderType::Vertex, vertexSource),
       fragmentShader(ShaderType::Fragment, fragmentSource){
 
@@ -33,10 +33,7 @@ ShaderProgram::ShaderProgram(const std::string& vertexSource,const std::string& 
 	glDetachShader(id, vertexShader.getId());
 	glDetachShader(id, fragmentShader.getId());
 
-	m_camera = camera;
-	if (m_camera) m_camera->addObserver(this);	
 
-	if (m_camera != nullptr){ 
 	GLint location = glGetUniformLocation(id,"viewPos");
 		if(location != -1){
 			viewUfExist = 1;
@@ -57,11 +54,9 @@ ShaderProgram::ShaderProgram(const std::string& vertexSource,const std::string& 
 		if(location != -1){
 			modelUfExist = 1;
 		}
-	}
 }
 
 ShaderProgram::~ShaderProgram(){
-	if(m_camera) m_camera->delObserver(this);
 	if (id != 0) {
 		glDeleteProgram(id);
 	}
@@ -91,6 +86,35 @@ void ShaderProgram::setVec3(const std::string& name, const glm::vec3& v) const {
 		exit(EXIT_FAILURE);
 	}
     glUniform3fv(glGetUniformLocation(id, name.c_str()), 1, glm::value_ptr(v));
+}
+
+void ShaderProgram::setVec4(const std::string& name, const glm::vec4& v) const {
+	GLint location = glGetUniformLocation(id, name.c_str());
+	if(location == -1){
+		std::cerr << "Unhandled error! Couldn't find uniform value: "  << name << " in shader: " << this->id<< std::endl;
+		exit(EXIT_FAILURE);
+	}
+    glUniform3fv(glGetUniformLocation(id, name.c_str()), 1, glm::value_ptr(v));
+}
+
+void ShaderProgram::setInt(const std::string& name, int value) {
+    GLint location = glGetUniformLocation(id, name.c_str());
+    if (location == -1) {
+        std::cerr << "Couldn't find uniform: " << name
+                  << " in shader: " << id << std::endl;
+        return;
+    }
+    glUniform1i(location, value);
+}
+
+void ShaderProgram::setFloat(const std::string& name, float value) {
+    GLint location = glGetUniformLocation(id, name.c_str());
+    if (location == -1) {
+        std::cerr << "Couldn't find uniform: " << name
+                  << " in shader: " << id << std::endl;
+        return;
+    }
+    glUniform1f(location, value);
 }
 
 
@@ -130,6 +154,14 @@ void ShaderProgram::setTime(float time){
 	glUniform1f(location, time);
 }
 
+void ShaderProgram::setCamera(Camera* camera){
+	camera->addObserver(this);	
+}
+
+void ShaderProgram::setLight(Light* light){
+	light->addObserver(this);	
+}
+
 void ShaderProgram::update(const Camera& camera) {
 	use();
 	setMat4("projectionMatrix",camera.getProjMatrix());
@@ -150,5 +182,7 @@ void ShaderProgram::update(const Light& light) {
 	use();
 	if(lightUfExist){
 		setVec3("lightPos", light.getPos());
+		setVec3("lightColor", light.getColor());
+		setFloat("lightIntensity",light.getIntensity());
 	}
 }

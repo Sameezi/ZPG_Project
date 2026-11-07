@@ -14,7 +14,7 @@ class Camera;
 class Light;
 class ShaderProgram : public Observer<Camera>, public Observer<Light> {
 	public:
-		ShaderProgram(const std::string& vertexSource,const std::string& fragmentSource, Camera* camera = nullptr);
+		ShaderProgram(const std::string& vertexSource,const std::string& fragmentSource);
 		~ShaderProgram();
 		ShaderProgram(const ShaderProgram&) = delete;
 		ShaderProgram& operator=(const ShaderProgram&) = delete;
@@ -22,6 +22,9 @@ class ShaderProgram : public Observer<Camera>, public Observer<Light> {
 		void use() const;
 		void setMat4(const std::string& name, const glm::mat4& mat) const;
 		void setVec3(const std::string& name, const glm::vec3& vec) const;
+		void setVec4(const std::string& name, const glm::vec4& vec) const;
+		void setInt(const std::string& name, int value);
+		void setFloat(const std::string& name, float value);
 
 		void setTranslation(const glm::vec3& t) const;
 		void setTranslation(float x, float y, float z) const;
@@ -34,12 +37,14 @@ class ShaderProgram : public Observer<Camera>, public Observer<Light> {
 		void setRotation(const glm::vec3& eulerRadians) const;   
 
 		void setTime(float time);
+		void setCamera(Camera* camera);
+		void setLight(Light* light);
+		
 
 		void update(const Camera& camera) override; 
 		void update(const Light& light) override;
 
 	private:
-		Camera* m_camera;
 		Shader vertexShader;
 		Shader fragmentShader;
 		GLint viewUfExist{0};

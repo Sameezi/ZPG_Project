@@ -18,9 +18,9 @@ class ShaderProgram;
 class DrawableObject{
     public:
     // uses its own shader, built from source
-        DrawableObject(std::shared_ptr<Model> model, std::shared_ptr<ShaderProgram> shader);
+        DrawableObject(Model& model, ShaderProgram& shader);
     // no shader — scene will supply one at draw time
-        explicit DrawableObject(std::shared_ptr<Model> model);
+        explicit DrawableObject(Model& model);
         
         void draw(ShaderProgram& fallbackShader);
         void update(float deltat);
@@ -30,14 +30,10 @@ class DrawableObject{
         glm::vec3 getPos() const;
         void setPos(glm::vec3 pos) const;
 
-        DrawableObject(const DrawableObject&) = delete;
-        DrawableObject& operator=(const DrawableObject&) = delete;
-        DrawableObject(DrawableObject&&) = default;
-        DrawableObject& operator=(DrawableObject&&) = default;
 
     private:
-       std::shared_ptr<Model> m_model; 
+       Model* m_model; 
        std::shared_ptr<Transform> m_transform;
     protected:
-        std::shared_ptr<ShaderProgram> m_shader;
+        ShaderProgram* m_shader;
 };

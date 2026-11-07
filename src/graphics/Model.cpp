@@ -144,8 +144,7 @@ Model::Model(const std::string& modPath, const std::string& texPath)
     glBindVertexArray(0);
     vertexCount = (GLsizei)vertices.size();
 
-    auto texture = std::make_unique<Texture>(texPath);
-    m_texture = std::move(texture);
+    addTexture(0,std::make_unique<Texture>(texPath));
 }
 
 Model::Model(const std::vector<float>& vertices, const std::string& texPath)
@@ -173,8 +172,7 @@ Model::Model(const std::vector<float>& vertices, const std::string& texPath)
 
     vertexCount = (GLsizei)vertices.size();
 
-    auto texture = std::make_unique<Texture>(texPath);
-    m_texture = std::move(texture);
+    addTexture(0, std::make_shared<Texture>(texPath));
 }
 
 Model::~Model() {
@@ -187,11 +185,31 @@ Model::~Model() {
 }
 
 void Model::draw() const {
-    if (m_texture) m_texture->bind(0);
+    for (auto& slot: m_textures){
+        slot.texture->bind(slot.unit);
+    }
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLES, 0, vertexCount);
     glBindVertexArray(0);
+
+    glActiveTexture(GL_TEXTURE0); // Default state
     ++RenderStats::drawCalls;
 }
+
+void Model::addTexture(GLuint unit, std::shared_ptr<Texture> tex) {
+    for (auto& slot : m_textures) {
+        if (slot.unit == unit) { slot.texture = std::move(tex); return; }
+    }
+    m_textures.push_back({unit, std::move(tex)});
+}
+
+void Model::addTexture(GLuint unit, const std::string& path) {
+    addTexture(unit, std::make_shared<Texture>(path));
+}
+
+void Model::removeTexture(GLuint unit) {
+    std::erase_if(m_textures, [unit](const TextureSlot& s){ return s.unit == unit; });
+}
+
 
 
