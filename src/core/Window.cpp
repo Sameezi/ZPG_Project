@@ -8,6 +8,7 @@ Window::Window(int width, int height, const char* name){
 
 	if (!glfwInit()) throw std::runtime_error("glfwInit failed");
 
+	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 	this->handle = glfwCreateWindow(width,height,name,NULL,NULL);
 	if (!handle){

@@ -1,0 +1,24 @@
+#version 330 core
+
+layout (location = 0) in vec3 vertexPosition;
+layout (location = 2) in vec3 vertexNormal;
+layout (location = 1) in vec2 vertexUV;
+
+uniform mat4 modelMatrix = mat4(1.0);;
+uniform mat4 viewMatrix = mat4(1.0);;
+uniform mat4 projectionMatrix = mat4(1.0);;
+
+out vec3 worldPos;
+out vec3 worldNorm;
+out vec2 uv;
+
+void main()
+{
+    vec4 world = modelMatrix * vec4(vertexPosition, 1.0);
+    worldPos = world.xyz;
+    mat3 normalMatrix = transpose(inverse(mat3(modelMatrix)));
+    worldNorm=normalMatrix * vertexNormal; 
+    uv = vertexUV;
+
+    gl_Position  =  projectionMatrix * viewMatrix * modelMatrix * vec4(vertexPosition, 1.0);
+}

@@ -19,5 +19,5 @@ void main()
     float shade = 0.3 + 0.7 * abs(N.y);
 
     vec3 color = ambient + diff * (shade * vertexColor);
-    fragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+    fragColor = vec4(clamp(color, 0.0, 0.5), 1.0);
 }

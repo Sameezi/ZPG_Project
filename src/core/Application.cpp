@@ -197,6 +197,29 @@ void Application::addScenes(){
 		-0.5f, 0.0f, 1.0f,n.x,n.y,n.z, 1.0f,1.0f
 	 };
 
+	 auto& shaderManager = resources.shaders;
+	 auto& phong = shaderManager.load("phong",  "shaders/lighting_9float.vert",  "shaders/phong.frag");
+	 auto& phongTex = shaderManager.load("phongTex",  "shaders/lighting_texture.vert",  "shaders/phong_texture.frag");
+	 auto& ambient = shaderManager.load("ambient", "shaders/lighting_9float.vert", "shaders/ambient.frag");
+	 auto& blinPhong = shaderManager.load("blinphong", "shaders/lighting_9float.vert", "shaders/blinn_phong.frag");
+	 auto& blinPhong_2 = shaderManager.load("blinphong_2", "shaders/lighting_6float.vert", "shaders/blinn_phong.frag");
+	 auto& diffuse = shaderManager.load("diffuse","shaders/lighting_6float.vert","shaders/diffuse.frag");
+	 auto& diffuseTex = shaderManager.load("diffuseTex","shaders/lighting_texture.vert","shaders/diffuse_texture.frag");
+     auto& textureShader = shaderManager.load("texture","shaders/texture.vert","shaders/texture.frag");
+	 auto& treecolor = shaderManager.load("treecolor","shaders/treeColored.vert","shaders/treeColored.frag");
+	 auto& skyShader = resources.shaders.load("skybox", "shaders/skybox.vert", "shaders/skybox.frag");
+	 
+	 std::string folderPath = "../textures/cubemaps/clouds/";
+		std::vector<std::string> faces = {
+			folderPath + "posx.png", 
+			folderPath + "negx.png", 
+			folderPath + "posy.png",
+			folderPath + "negy.png",
+			folderPath + "posz.png",
+			folderPath + "negz.png"
+		};
+	 auto& skyTex = resources.cubemaps.load("sky", faces);
+
 	 auto& modelManager = resources.models;
 	 auto& sun = modelManager.load("sun",sunVertices,9);
 	 auto& moon = modelManager.load("moon",moonVertices,9);
@@ -208,32 +231,12 @@ void Application::addScenes(){
 	 auto& shrek = modelManager.load("shrek","../models/shrek.obj","../textures/shrek.png");
 	 auto& fiona = modelManager.load("fiona","../models/fiona.obj","../textures/fiona.png");
 	 auto& ground = modelManager.load("ground",groundVertices,"../textures/grass.jpg");
-	 auto& eb408 = modelManager.load("eb408","../models/eb408.obj","../textures/T_EB408.png");
+	 auto& eb408 = modelManager.load("eb408","../models/EB408.obj","../textures/T_EB408.png");
 	 auto& chair = modelManager.load("chair","../models/OrangeChair.obj","../textures/T_OrangeChair_BaseColor.png");
 	 auto& table = modelManager.load("table","../models/table.obj","../textures/T_Table_BaseColor.png");
 	 auto& whiteboard = modelManager.load("whiteboard","../models/Whiteboard.obj","../textures/T_Whiteboard_BaseColor.png");
 	 auto& door = modelManager.load("door","../models/Door.obj","../textures/T_door_basecolor.png");
 
-	 auto& shaderManager = resources.shaders;
-	 auto& phong = shaderManager.load("phong",  "shaders/lighting_9float.vert",  "shaders/phong.frag");
-	 auto& ambient = shaderManager.load("ambient", "shaders/lighting_9float.vert", "shaders/ambient.frag");
-	 auto& blinPhong = shaderManager.load("blinphong", "shaders/lighting_9float.vert", "shaders/blinn_phong.frag");
-	 auto& blinPhong_2 = shaderManager.load("blinphong_2", "shaders/lighting_6float.vert", "shaders/blinn_phong.frag");
-	 auto& diffuse = shaderManager.load("diffuse","shaders/lighting_6float.vert","shaders/diffuse.frag");
-     auto& textureShader = shaderManager.load("texture","shaders/tex.vert","shaders/texture.frag");
-	 auto& treecolor = shaderManager.load("treecolor","shaders/treeColored.vert","shaders/treeColored.frag");
-	 auto& skyShader = resources.shaders.load("skybox", "shaders/skybox.vert", "shaders/skybox.frag");
-	 
-	 std::string folderPath = "../textures/cubemaps/forest/";
-		std::vector<std::string> faces = {
-			folderPath + "posx.jpg", 
-			folderPath + "negx.jpg", 
-			folderPath + "posy.jpg",
-			folderPath + "negy.jpg",
-			folderPath + "posz.jpg",
-			folderPath + "negz.jpg"
-		};
-	 auto& skyTex = resources.cubemaps.load("sky", faces);
 
 	 // Space example
 	 m_scenes.push_back(new Scene());
@@ -336,7 +339,7 @@ void Application::addScenes(){
 	{
 	 std::vector<TransformComposite> composites;
 	 for(int i = 0; i <= 73; i++){
-	 float randomScale = randomFloat(0.1f, 0.25f); 
+	 float randomScale = randomFloat(0.1f, 0.50f); 
 	 float randomZ = randomFloat(-25.0f, 25.0f);
 	 float randomX = randomFloat(-25.0f, 25.0f);
 	 float randomRot = randomFloat(-90.0f,90.0f);
@@ -365,15 +368,65 @@ void Application::addScenes(){
 	 }
 
 	// Setting classroom scene
-	//m_scenes[2]->addObject("classroom",std::make_unique<DrawableObject>(eb408,diffuse));
-	m_scenes[2]->addObject("door",std::make_unique<DrawableObject>(door,textureShader));
-	m_scenes[2]->addSkybox(std::make_shared<Skybox>("../models/skybox.obj",skyTex, skyShader));
+	m_scenes[2]->addObject("classroom",std::make_unique<DrawableObject>(eb408,diffuseTex));
+	m_scenes[2]->addObject("door",std::make_unique<DrawableObject>(door,diffuseTex));
+	whiteboard.addTexture(2,"../textures/presentation1.png");
+	m_scenes[2]->addObject("whiteboard",std::make_unique<DrawableObject>(whiteboard,phongTex));
+	m_scenes[2]->addObject("light",std::make_unique<Light>(sphere,ambient,glm::vec3(1.0f,1.0f,1.0f),1.0f));
 
-	textureShader.setCamera(m_scenes[2]->getCamera());
+	
+	std::vector<glm::vec3> chairPositions = {{-0.74,0,1.17},{-0.74,0,2.17},{-0.74,0,3.17},{-0.74,0,4.17},{-0.74,0,5.17},{-0.74,0,5.9},
+	 										 {0.82,0,1.17},{0.82,0,2.17},{0.82,0,3.17},{0.82,0,4.17},{0.82,0,5.17},{0.82,0,5.9},
+											 {2.42,0,1.17},{2.42,0,2.17},{2.42,0,3.17},{2.42,0,4.17},{2.42,0,5.17},{2.42,0,5.9},
+											 {-2.92,0,0.92}};
+	for(int i = 0; i < 19; i++){
+		std::string name = "chair" + std::to_string(i);
+		m_scenes[2]->addObject(name,std::make_unique<DrawableObject>(chair,diffuseTex));
+	
+		auto composite = std::make_shared<TransformComposite>();
+		composite->addNode(std::make_shared<Translation>(chairPositions.at(i)));
+		if(i == 18) composite->addNode(std::make_shared<Rotation>(glm::radians(90.0f),glm::vec3(0.0,1.0,0.0)));
+		else composite->addNode(std::make_shared<Rotation>(glm::radians(-90.0f),glm::vec3(0.0,1.0,.0)));
+		m_scenes[2]->getObject(name).setTransform(composite);
+	}
+
+	std::vector<glm::vec3> tablePositions = {{-1,0,1.7}, {-1,0,3.5}, {-1,0,5.3}, {0.5,0,1.7}, {0.5,0,3.5}, {0.5,0,5.3}, {2.1,0,1.7},{2.1,0,3.5}, {2.1,0,5.3}, {-2.4,0,1.3}};
+	for(int i = 0; i < 10; i++){
+		std::string name = "table" + std::to_string(i);
+		m_scenes[2]->addObject(name,std::make_unique<DrawableObject>(table,diffuseTex));
+
+		auto composite = std::make_shared<TransformComposite>();
+		composite->addNode(std::make_shared<Translation>(tablePositions.at(i)));
+		composite->addNode(std::make_shared<Rotation>(glm::radians(90.0f),glm::vec3(0.0,1.0,.0)));
+		m_scenes[2]->getObject(name).setTransform(composite);
+	}
+
+	{
+	 auto composite = std::make_shared<TransformComposite>();
+	 composite->addNode(std::make_shared<Translation>(glm::vec3(-3.8f,.0f,4.0f)));
+	 m_scenes[2]->getObject("whiteboard").setTransform(composite);
+	}
+	{ 
+	 auto composite = std::make_shared<TransformComposite>();
+	 composite->addNode(std::make_shared<Translation>(glm::vec3(-2.39f,.0f,7.7f)));
+	 m_scenes[2]->getObject("door").setTransform(composite);
+	}
+	{
+	 auto composite = std::make_shared<TransformComposite>();
+	 composite->addNode(std::make_shared<Translation>(glm::vec3(0.5,3.0,3.5)));
+	 composite->addNode(std::make_shared<Scaling>(0.05f));
+	 m_scenes[2]->getLightObject("light").setTransform(composite);
+	}
+
+
+	m_scenes[2]->addSkybox(std::make_shared<Skybox>("../models/skybox.obj",skyTex, skyShader));
+	diffuseTex.setCamera(m_scenes[2]->getCamera()); 	diffuseTex.setLight(&m_scenes[2]->getLightObject("light"));
+	phongTex.setCamera(m_scenes[2]->getCamera()); 	    phongTex.setLight(&m_scenes[2]->getLightObject("light"));
 	skyShader.setCamera(m_scenes[2]->getCamera());
+	ambient.setCamera(m_scenes[2]->getCamera());
+
 
 	main_scene = m_scenes[2];
-
 }
 
 

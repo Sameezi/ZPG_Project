@@ -121,7 +121,10 @@ bool Model::loadOBJ(const std::string& path, std::vector<Vertex>& out)
 Model::Model(const std::string& modPath, const std::string& texPath)
 {
     std::vector<Vertex> vertices;
-    loadOBJ(modPath, vertices);
+    if(!loadOBJ(modPath, vertices)){
+        std::string message = "Couldn't find "+modPath+" , file is not .obj or does not exist!";
+        throw std::invalid_argument(message);
+    }
 
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
@@ -144,6 +147,7 @@ Model::Model(const std::string& modPath, const std::string& texPath)
     glBindVertexArray(0);
     vertexCount = (GLsizei)vertices.size();
 
+    std::cout<<modPath<<" loaded with " << vertexCount << " vertices"<<std::endl;
     addTexture(0,std::make_unique<Texture>(texPath));
 }
 

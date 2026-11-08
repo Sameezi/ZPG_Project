@@ -9,6 +9,8 @@ Texture::Texture(const std::string& path){
 
     if(!data){
         std::cerr << "Error loading texture: " << path; 
+    }else{
+        std::cout << path << " x " << width << " y " << height << " channels: " << channels << std::endl; 
     }
     glActiveTexture(GL_TEXTURE0);
     glGenTextures(1, &id);
