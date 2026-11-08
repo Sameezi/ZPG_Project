@@ -39,6 +39,9 @@ void DrawableObject::draw(ShaderProgram& fallbackShader) {
 
     if (!dynamic_cast<InstancedModel*>(m_model))
         shader.setMat4("modelMatrix", matrice);
+    if(m_model->getTextureCount() > 1)
+        for(int i = 0; i < m_model->getTextureCount(); i++)
+            shader.setInt("textureUnit" + std::to_string(i+1), i);
 
     m_model->draw();
 }

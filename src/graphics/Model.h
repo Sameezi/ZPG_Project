@@ -27,6 +27,7 @@ class Model{
         void addTexture(GLuint unit, std::shared_ptr<Texture> texture);
         void addTexture(GLuint unit, const std::string& path);
         void removeTexture(GLuint unit);
+        int getTextureCount();
 
         virtual void draw() const; 
     private:

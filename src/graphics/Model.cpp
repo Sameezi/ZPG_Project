@@ -215,5 +215,9 @@ void Model::removeTexture(GLuint unit) {
     std::erase_if(m_textures, [unit](const TextureSlot& s){ return s.unit == unit; });
 }
 
+int Model::getTextureCount(){
+    return m_textures.size();
+}
+
 
 

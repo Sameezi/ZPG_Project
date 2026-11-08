@@ -189,17 +189,19 @@ void Application::addScenes(){
      glm::vec3 n(0.0f, 0.0f, 1.0f);
 	 glm::vec3 groundColor = {0.16f, 0.32f, 0.0f};
 	 std::vector<float> groundVertices = {
-		0.0f, 0.5f, 1.0f, n.x,n.y,n.z, 0.0f, 0.0f,
-		-0.5f, 0.5f, 1.0f, n.x,n.y,n.z,1.0f, 0.0f,
-		-0.5f, 0.0f, 1.0f,n.x,n.y,n.z,1.0f, 1.0f,
-		0.0f, 0.0f, 1.0f,n.x,n.y,n.z, 0.0f, 1.0f,
-		0.0f, 0.5f, 1.0f,n.x,n.y,n.z, 0.0f, 0.0f,
-		-0.5f, 0.0f, 1.0f,n.x,n.y,n.z, 1.0f,1.0f
-	 };
+     0.0f,  0.5f, 1.0f,   n.x, n.y, n.z,   0.0f, 1.0f,
+    -0.5f,  0.5f, 1.0f,   n.x, n.y, n.z,   1.0f, 1.0f,
+    -0.5f,  0.0f, 1.0f,   n.x, n.y, n.z,   1.0f, 0.0f,
+
+     0.0f,  0.0f, 1.0f,   n.x, n.y, n.z,   0.0f, 0.0f,
+     0.0f,  0.5f, 1.0f,   n.x, n.y, n.z,   0.0f, 1.0f,
+    -0.5f,  0.0f, 1.0f,   n.x, n.y, n.z,   1.0f, 0.0f
+	};
+
 
 	 auto& shaderManager = resources.shaders;
 	 auto& phong = shaderManager.load("phong",  "shaders/lighting_9float.vert",  "shaders/phong.frag");
-	 auto& phongTex = shaderManager.load("phongTex",  "shaders/lighting_texture.vert",  "shaders/phong_texture.frag");
+	 auto& phongTex = shaderManager.load("phongTex",  "shaders/lighting_texture.vert",  "shaders/phong_textures.frag");
 	 auto& ambient = shaderManager.load("ambient", "shaders/lighting_9float.vert", "shaders/ambient.frag");
 	 auto& blinPhong = shaderManager.load("blinphong", "shaders/lighting_9float.vert", "shaders/blinn_phong.frag");
 	 auto& blinPhong_2 = shaderManager.load("blinphong_2", "shaders/lighting_6float.vert", "shaders/blinn_phong.frag");
@@ -231,11 +233,13 @@ void Application::addScenes(){
 	 auto& shrek = modelManager.load("shrek","../models/shrek.obj","../textures/shrek.png");
 	 auto& fiona = modelManager.load("fiona","../models/fiona.obj","../textures/fiona.png");
 	 auto& ground = modelManager.load("ground",groundVertices,"../textures/grass.jpg");
+	 auto& presentation = modelManager.load("presentation",groundVertices,"../textures/presentation1.png");
 	 auto& eb408 = modelManager.load("eb408","../models/EB408.obj","../textures/T_EB408.png");
 	 auto& chair = modelManager.load("chair","../models/OrangeChair.obj","../textures/T_OrangeChair_BaseColor.png");
 	 auto& table = modelManager.load("table","../models/table.obj","../textures/T_Table_BaseColor.png");
 	 auto& whiteboard = modelManager.load("whiteboard","../models/Whiteboard.obj","../textures/T_Whiteboard_BaseColor.png");
 	 auto& door = modelManager.load("door","../models/Door.obj","../textures/T_door_basecolor.png");
+	 auto& computer = modelManager.load("computer","../models/Computer.obj", "../textures/Computer.png");
 
 
 	 // Space example
@@ -368,12 +372,12 @@ void Application::addScenes(){
 	 }
 
 	// Setting classroom scene
+	m_scenes[2]->addObject("presentation", std::make_unique<DrawableObject>(presentation,textureShader));
 	m_scenes[2]->addObject("classroom",std::make_unique<DrawableObject>(eb408,diffuseTex));
 	m_scenes[2]->addObject("door",std::make_unique<DrawableObject>(door,diffuseTex));
-	whiteboard.addTexture(2,"../textures/presentation1.png");
 	m_scenes[2]->addObject("whiteboard",std::make_unique<DrawableObject>(whiteboard,phongTex));
-	m_scenes[2]->addObject("light",std::make_unique<Light>(sphere,ambient,glm::vec3(1.0f,1.0f,1.0f),1.0f));
-
+	m_scenes[2]->addObject("light",std::make_unique<Light>(sphere,diffuse,glm::vec3(1.0f,1.0f,1.0f),1.0f));
+	
 	
 	std::vector<glm::vec3> chairPositions = {{-0.74,0,1.17},{-0.74,0,2.17},{-0.74,0,3.17},{-0.74,0,4.17},{-0.74,0,5.17},{-0.74,0,5.9},
 	 										 {0.82,0,1.17},{0.82,0,2.17},{0.82,0,3.17},{0.82,0,4.17},{0.82,0,5.17},{0.82,0,5.9},
@@ -387,6 +391,7 @@ void Application::addScenes(){
 		composite->addNode(std::make_shared<Translation>(chairPositions.at(i)));
 		if(i == 18) composite->addNode(std::make_shared<Rotation>(glm::radians(90.0f),glm::vec3(0.0,1.0,0.0)));
 		else composite->addNode(std::make_shared<Rotation>(glm::radians(-90.0f),glm::vec3(0.0,1.0,.0)));
+
 		m_scenes[2]->getObject(name).setTransform(composite);
 	}
 
@@ -398,13 +403,38 @@ void Application::addScenes(){
 		auto composite = std::make_shared<TransformComposite>();
 		composite->addNode(std::make_shared<Translation>(tablePositions.at(i)));
 		composite->addNode(std::make_shared<Rotation>(glm::radians(90.0f),glm::vec3(0.0,1.0,.0)));
+
 		m_scenes[2]->getObject(name).setTransform(composite);
 	}
+
+	std::vector<glm::vec3> computerPositions = {{-1.12,0.67,1.25},{-1.12,0.67,2.25},{-1.12,0.67,3.25},{-1.12,0.67,4.20},{-1.12,0.67,5.25},{-1.17,0.67,6.0},
+												{0.48,0.67,1.25},{0.48,0.67,2.25},{0.48,0.67,3.25},{0.48,0.67,4.20},{0.48,0.67,5.25},{0.48,0.67,6.0},
+												{2.1,0.67,1.25},{2.1,0.67,2.25},{2.1,0.67,3.25},{2.1,0.67,4.20},{2.1,0.67,5.25},{2.1,0.67,6.0},
+												{-2.53,0.67,0.92}};
+	for(int i = 0; i < 19; i++){
+		std::string name = "computer" + std::to_string(i);
+		m_scenes[2]->addObject(name,std::make_unique<DrawableObject>(computer,diffuseTex));
+
+		auto composite = std::make_shared<TransformComposite>();
+		composite->addNode(std::make_shared<Translation>(computerPositions.at(i)));
+		if(i == 18) composite->addNode(std::make_shared<Rotation>(glm::radians(-90.0f),glm::vec3(0.0,1.0,0.0)));
+		else composite->addNode(std::make_shared<Rotation>(glm::radians(90.0f),glm::vec3(0.0,1.0,.0)));
+		composite->addNode(std::make_shared<Scaling>(0.001));
+
+		m_scenes[2]->getObject(name).setTransform(composite);
+	}	
 
 	{
 	 auto composite = std::make_shared<TransformComposite>();
 	 composite->addNode(std::make_shared<Translation>(glm::vec3(-3.8f,.0f,4.0f)));
 	 m_scenes[2]->getObject("whiteboard").setTransform(composite);
+	}
+	{
+	 auto composite = std::make_shared<TransformComposite>();
+	 composite->addNode(std::make_shared<Translation>(glm::vec3(-2.78f,0.985f,5.14f)));
+  	 composite->addNode(std::make_shared<Rotation>(glm::radians(-90.0f),glm::vec3(0.0,1.0,0.0)));
+	 composite->addNode(std::make_shared<Scaling>(glm::vec3(4.470f,2.51f,1.0f)));
+	 m_scenes[2]->getObject("presentation").setTransform(composite);
 	}
 	{ 
 	 auto composite = std::make_shared<TransformComposite>();
@@ -419,11 +449,13 @@ void Application::addScenes(){
 	}
 
 
+
 	m_scenes[2]->addSkybox(std::make_shared<Skybox>("../models/skybox.obj",skyTex, skyShader));
 	diffuseTex.setCamera(m_scenes[2]->getCamera()); 	diffuseTex.setLight(&m_scenes[2]->getLightObject("light"));
 	phongTex.setCamera(m_scenes[2]->getCamera()); 	    phongTex.setLight(&m_scenes[2]->getLightObject("light"));
 	skyShader.setCamera(m_scenes[2]->getCamera());
-	ambient.setCamera(m_scenes[2]->getCamera());
+	diffuse.setCamera(m_scenes[2]->getCamera());
+	textureShader.setCamera(m_scenes[2]->getCamera());
 
 
 	main_scene = m_scenes[2];
@@ -435,6 +467,8 @@ void Application::run(){
 	int frameCount = 0;
 	glEnable(GL_MULTISAMPLE);
 	GLFWwindow* win = window.get();
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	while (!glfwWindowShouldClose(win))
 	{
 	// FPS
