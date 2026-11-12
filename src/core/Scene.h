@@ -24,7 +24,8 @@ class Scene{
         DrawableObject& addObject(const std::string& name, Model& model, ShaderProgram& shader);
         DrawableObject& addObject(Model& model, ShaderProgram& shader);
         DrawableObject& getObject(const std::string& name);
-        DrawableObject& getLastObject();
+        DrawableObject& getObject(GLuint id = -1);
+        bool removeObject(GLuint id = -1);
 
         Light& addLightObject(const std::string& name, Model& model, ShaderProgram& shader, 
                          glm::vec3 color = glm::vec3(1.0f), float intensity = 1.0f);
@@ -36,6 +37,7 @@ class Scene{
         Camera* getCamera();
     private:
         std::unordered_map<std::string, std::unique_ptr<DrawableObject>> m_objects; 
+        std::unordered_map<GLuint, DrawableObject*> m_objectsById;
         std::unordered_map<std::string, std::unique_ptr<Light>> m_lightObjects;
         std::unique_ptr<ShaderProgram> m_defaultShader;
         std::shared_ptr<Skybox> m_skybox;

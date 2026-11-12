@@ -73,7 +73,7 @@ void Application::mouseButtonCallback(GLFWwindow* window, int button, int action
     auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
     if (!app) return;
 
-	if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS){
+	if((action == GLFW_PRESS && button == GLFW_MOUSE_BUTTON_LEFT)){ 
 		// getting cursor position
 		double xpos, ypos;
    		glfwGetCursorPos(window, &xpos, &ypos);
@@ -89,36 +89,55 @@ void Application::mouseButtonCallback(GLFWwindow* window, int button, int action
 		glReadPixels(x, height - y - 1, 1, 1,
              GL_STENCIL_INDEX, GL_UNSIGNED_INT, &id);
 
-		// selection range only from 1-255
-		if (id != 0) {
-		std::cout << "Clicked on object: " << id << std::endl;
+		if(app->getMode() == 0){
+			// selection range only from 1-255
+			if (id != 0)
+				std::cout << "Clicked on object: " << id << std::endl;
 		}
-
-		if(app->getMode() == 1){
-			app->onClickAddObject(width,height,xpos,ypos);
-		}	
-
+		if(app->getMode() == 1)
+			app->onClickAddObject(app->getWorldPosition(width,height,xpos,ypos));
+		if(app->getMode() == 2)
+			app->onClickDestObject(id);
 	}
-
-    if (action == GLFW_PRESS && button == GLFW_MOUSE_BUTTON_RIGHT) {
-        app->m_dragging = true;
-    	glfwGetCursorPos(window, &app->m_lastX, &app->m_lastY);
-    } else if (action == GLFW_RELEASE) {
-        app->m_dragging = false;
-    }
+	
+	// Movement camera around
+	if (action == GLFW_PRESS && button == GLFW_MOUSE_BUTTON_RIGHT) {
+		app->m_dragging = true;
+		glfwGetCursorPos(window, &app->m_lastX, &app->m_lastY);
+	} else if (action == GLFW_RELEASE) {
+		app->m_dragging = false;
+	}
 }
 
 void Application::cursorPosCallback(GLFWwindow* window, double x, double y) {
     auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
-    if (!app || !app->m_dragging) return;
+    if (!app) return;
 
-    const float sensitivity = 0.1f;
-    float dx = (float)(x - app->m_lastX) * sensitivity;
-    float dy = (float)(app->m_lastY - y) * sensitivity;   
-    app->m_lastX = x;
-    app->m_lastY = y;
+	if(app->getMode() == 1){
+		// getting cursor position
+		double xpos, ypos;
+   		glfwGetCursorPos(window, &xpos, &ypos);
+   		GLint x = static_cast<GLint>(xpos);
+   		GLint y = static_cast<GLint>(ypos);
 
-    app->main_scene->getCamera()->rotate(dx, dy);
+		// getting window dimensions
+		int width, height;
+		glfwGetFramebufferSize(window, &width, &height);
+
+		app->onPreviewObject(app->getWorldPosition(width,height,xpos,ypos));
+	}else{
+		app->onPreviewObject(glm::vec3(-10000.0f,-10000.0f,-10000.0f));
+	}
+
+	if(app->m_dragging){
+		const float sensitivity = 0.1f;
+		float dx = (float)(x - app->m_lastX) * sensitivity;
+		float dy = (float)(app->m_lastY - y) * sensitivity;   
+		app->m_lastX = x;
+		app->m_lastY = y;
+
+		app->main_scene->getCamera()->rotate(dx, dy);
+	}
 }
 
 void Application::framebufferSizeCallback(GLFWwindow* window, int width, int height){
@@ -139,7 +158,7 @@ void Application::onResize(int width, int height)
 	}
 }
 
-void Application::onClickAddObject(int width, int height, double xpos, double ypos){
+glm::vec3 Application::getWorldPosition(int width, int height, double xpos, double ypos){
 	float winX = static_cast<float>(xpos);
 	float winY = static_cast<float>(height) - static_cast<float>(ypos) - 1.0f;
 	// getting depth from depth buffer
@@ -150,7 +169,10 @@ void Application::onClickAddObject(int width, int height, double xpos, double yp
 	glm::mat4 view = main_scene->getCamera()->getViewMatrix();
 	glm::mat4 projection = main_scene->getCamera()->getProjMatrix();
 	glm::vec3 worldPos = glm::unProject(glm::vec3(winX, winY, depth), view, projection, viewport);
+	return worldPos;
+}
 
+void Application::onClickAddObject(glm::vec3 position){
 	auto& modelManager = resources.models;
 	auto& shaderManager = resources.shaders;
 	auto& model = *modelManager.get(std::get<0>(editorObject));
@@ -158,8 +180,21 @@ void Application::onClickAddObject(int width, int height, double xpos, double yp
 	main_scene->addObject(model,shader);
 
 	auto composite = std::make_shared<TransformComposite>();
-	composite->addNode(std::make_shared<Translation>(worldPos));
-	main_scene->getLastObject().setTransform(composite);
+	composite->addNode(std::make_shared<Translation>(position));
+	main_scene->getObject().setTransform(composite);
+}
+
+void Application::onPreviewObject(glm::vec3 position){
+	auto composite = std::make_shared<TransformComposite>();
+	composite->addNode(std::make_shared<Translation>(position));
+	glm::vec4 rotation = std::get<2>(editorObject);
+	composite->addNode(std::make_shared<Rotation>(rotation.x, glm::vec3(rotation.y,rotation.z,rotation.w)));
+	main_scene->getObject().setTransform(composite);
+}
+
+void Application::onClickDestObject(GLuint id){
+	if(main_scene->removeObject(id)) // Only deletes user made objects starting with "obj-" + ID
+		std::cout << "Destroyed user object " << id << std::endl;
 }
 
 int Application::getMode(){
@@ -167,8 +202,10 @@ int Application::getMode(){
 		return 0;
 	}else if(mode.compare("Insert") == 0){
 		return 1;
-	}else{
+	}else if(mode.compare("Delete") == 0){
 		return 2;
+	}else{
+		return 3;
 	}
 }
 
@@ -195,6 +232,11 @@ void Application::processInput(){
         movement = glm::normalize(movement);
     }
 
+	float speed = glm::radians(10.0f);   
+	glm::vec4 *rotation = &std::get<2>(editorObject);
+	if (glfwGetKey(win, GLFW_KEY_LEFT)  == GLFW_PRESS) rotation->x += speed;
+	if (glfwGetKey(win, GLFW_KEY_RIGHT) == GLFW_PRESS) rotation->x -= speed;
+
 	main_scene->getCamera()->setMovement(movement * cameraSpeed);
 
 	if(glfwGetKey(win,GLFW_KEY_1) == GLFW_PRESS){
@@ -212,7 +254,7 @@ void Application::processInput(){
     	glClearColor(backgroundColor.x,backgroundColor.y,backgroundColor.z,backgroundColor.w);
 		this->main_scene = m_scenes[2];
 	}
-	if(glfwGetKey(win,GLFW_KEY_TAB) == GLFW_PRESS){
+	if(glfwGetKey(win,GLFW_KEY_TAB) == GLFW_PRESS && k_pressed == false){
 		if(mode.compare("Default") == 0){
 			mode = "Insert";
 		}else if(mode.compare("Insert") == 0){
@@ -220,7 +262,10 @@ void Application::processInput(){
 		}else{
 			mode = "Default";
 		}
+		k_pressed = true;
 	}
+	if(glfwGetKey(win,GLFW_KEY_TAB) == GLFW_RELEASE)
+		k_pressed = false;
 }
 
 float Application::randomFloat(float lo, float hi) {
@@ -311,6 +356,7 @@ void Application::addScenes(){
 
 	 std::get<0>(editorObject) = "chair";
 	 std::get<1>(editorObject) = "texture";
+	 std::get<2>(editorObject) = glm::vec4(0.0f,0.0f,1.0f,0.0f);
 
 	 // Space example
 	 m_scenes.push_back(new Scene());

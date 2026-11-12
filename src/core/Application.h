@@ -44,9 +44,10 @@ class Application{
 		static void cursorPosCallback(GLFWwindow* window, double x, double y);
 		static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 		void onResize(int width, int height);
-		void onClickAddObject(int width, int height, double xpos, double ypos);
+		void onClickAddObject(glm::vec3 position);
+		void onPreviewObject(glm::vec3 position);
+		void onClickDestObject(GLuint id);
 		int getMode();
-		std::tuple<std::string, std::string> editorObject; // <model name, shaderProgram name>
 
 	private:
 		Window window;	
@@ -56,10 +57,14 @@ class Application{
 		int currentScene{0};
 
 		bool m_dragging{false};
+		bool k_pressed{false};
 		double m_lastX{0.0};
 		double m_lastY{0.0};
 		int fbWidth = 1366, fbHeight = 768;
 		glm::vec3 lightPosition{0.0f};
 		std::string mode{"Default"};
+		std::tuple<std::string, std::string, glm::vec4> editorObject; // <model name, shaderProgram name, rotation>
+
+		glm::vec3 getWorldPosition(int width, int height, double xpos, double ypos);
 };
 

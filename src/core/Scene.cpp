@@ -26,6 +26,10 @@ DrawableObject& Scene::addObject(const std::string& name, Model& model,ShaderPro
         throw std::runtime_error("Couldn't add new object, limit of unique ids reached!");
     }
     auto obj = std::make_unique<DrawableObject>(model,shader,id);
+    // save into id map
+    DrawableObject* raw = obj.get();
+    m_objectsById[raw->getId()] = raw;
+
     auto [it, inserted] = m_objects.try_emplace(name, std::move(obj));
     return *it->second;
 }
@@ -36,6 +40,10 @@ DrawableObject& Scene::addObject(Model& model,ShaderProgram& shader){
         throw std::runtime_error("Couldn't add new object, limit of unique ids reached!");
     }
     auto obj = std::make_unique<DrawableObject>(model,shader,id);
+    // save into id map
+    DrawableObject* raw = obj.get();
+    m_objectsById[raw->getId()] = raw;
+
     const std::string& name = "obj-" + std::to_string(id);
     auto [it, inserted] = m_objects.try_emplace(name, std::move(obj));
     return *it->second;
@@ -47,6 +55,10 @@ Light& Scene::addLightObject(const std::string& name, Model& model, ShaderProgra
         throw std::runtime_error("Couldn't add new object, limit of unique ids reached!");
     }
     auto obj = std::make_unique<Light>(model,shader,color,intensity,id);
+    // save into id map
+    DrawableObject* raw = obj.get();
+    m_objectsById[raw->getId()] = raw;
+
     auto [it, inserted] = m_lightObjects.try_emplace(name, std::move(obj));
     return *it->second;
 }
@@ -86,9 +98,23 @@ DrawableObject& Scene::getObject(const std::string& name){
 }
 
 
-DrawableObject& Scene::getLastObject(){
-    const std::string& name = "obj-" + std::to_string(nextId-1);
-    return *m_objects.at(name);
+DrawableObject& Scene::getObject(GLuint id){
+    if(id == -1){
+        return *m_objectsById.at(nextId-1);
+    }
+    return *m_objectsById.at(id);
+}
+
+bool Scene::removeObject(GLuint id){ // Only user objects can be deleted!
+    const std::string name = "obj-" + std::to_string(id);
+    auto it = m_objects.find(name);
+    if (it == m_objects.end()){
+        std::cerr << "Object not found!\n";
+        return false;
+    }
+    m_objectsById.erase(it->second->getId());  // first index, then owner
+    m_objects.erase(it);
+    return true;
 }
 
 Light& Scene::getLightObject(const std::string& name){
