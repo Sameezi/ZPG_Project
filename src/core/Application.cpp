@@ -71,11 +71,38 @@ int Application::init(){
 
 void Application::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
     auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
-    if (!app || button != GLFW_MOUSE_BUTTON_RIGHT) return;
+    if (!app) return;
 
-    if (action == GLFW_PRESS) {
+	if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS){
+		// getting cursor position
+		double xpos, ypos;
+   		glfwGetCursorPos(window, &xpos, &ypos);
+   		GLint x = static_cast<GLint>(xpos);
+   		GLint y = static_cast<GLint>(ypos);
+
+		// getting window dimensions
+		int width, height;
+		glfwGetFramebufferSize(window, &width, &height);
+
+		// getting id under cursor pos
+		GLuint id = 0;
+		glReadPixels(x, height - y - 1, 1, 1,
+             GL_STENCIL_INDEX, GL_UNSIGNED_INT, &id);
+
+		// selection range only from 1-255
+		if (id != 0) {
+		std::cout << "Clicked on object: " << id << std::endl;
+		}
+
+		if(app->getMode() == 1){
+			app->onClickAddObject(width,height,xpos,ypos);
+		}	
+
+	}
+
+    if (action == GLFW_PRESS && button == GLFW_MOUSE_BUTTON_RIGHT) {
         app->m_dragging = true;
-    glfwGetCursorPos(window, &app->m_lastX, &app->m_lastY);
+    	glfwGetCursorPos(window, &app->m_lastX, &app->m_lastY);
     } else if (action == GLFW_RELEASE) {
         app->m_dragging = false;
     }
@@ -110,7 +137,39 @@ void Application::onResize(int width, int height)
 	for(auto& scene: m_scenes){
 		scene->getCamera()->setAspectRatio(static_cast<float>(width) / height);
 	}
+}
 
+void Application::onClickAddObject(int width, int height, double xpos, double ypos){
+	float winX = static_cast<float>(xpos);
+	float winY = static_cast<float>(height) - static_cast<float>(ypos) - 1.0f;
+	// getting depth from depth buffer
+	float depth;
+	glReadPixels((GLint)winX, (GLint)winY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+	// reconstructing point from screen space to world space
+	glm::vec4 viewport(0, 0, width, height);
+	glm::mat4 view = main_scene->getCamera()->getViewMatrix();
+	glm::mat4 projection = main_scene->getCamera()->getProjMatrix();
+	glm::vec3 worldPos = glm::unProject(glm::vec3(winX, winY, depth), view, projection, viewport);
+
+	auto& modelManager = resources.models;
+	auto& shaderManager = resources.shaders;
+	auto& model = *modelManager.get(std::get<0>(editorObject));
+	auto& shader = *shaderManager.get(std::get<1>(editorObject));
+	main_scene->addObject(model,shader);
+
+	auto composite = std::make_shared<TransformComposite>();
+	composite->addNode(std::make_shared<Translation>(worldPos));
+	main_scene->getLastObject().setTransform(composite);
+}
+
+int Application::getMode(){
+	if(mode.compare("Default") == 0){
+		return 0;
+	}else if(mode.compare("Insert") == 0){
+		return 1;
+	}else{
+		return 2;
+	}
 }
 
 void Application::processInput(){
@@ -152,6 +211,15 @@ void Application::processInput(){
 		glm::vec4 backgroundColor = this->main_scene->getBackgroundColor();
     	glClearColor(backgroundColor.x,backgroundColor.y,backgroundColor.z,backgroundColor.w);
 		this->main_scene = m_scenes[2];
+	}
+	if(glfwGetKey(win,GLFW_KEY_TAB) == GLFW_PRESS){
+		if(mode.compare("Default") == 0){
+			mode = "Insert";
+		}else if(mode.compare("Insert") == 0){
+			mode = "Delete";
+		}else{
+			mode = "Default";
+		}
 	}
 }
 
@@ -241,6 +309,8 @@ void Application::addScenes(){
 	 auto& door = modelManager.load("door","../models/Door.obj","../textures/T_door_basecolor.png");
 	 auto& computer = modelManager.load("computer","../models/Computer.obj", "../textures/Computer.png");
 
+	 std::get<0>(editorObject) = "chair";
+	 std::get<1>(editorObject) = "texture";
 
 	 // Space example
 	 m_scenes.push_back(new Scene());
@@ -259,11 +329,11 @@ void Application::addScenes(){
 
 	// Creating the space scene
 
-	 m_scenes[0]->addObject("sun",std::make_unique<Light>(sun,ambient));
-	 m_scenes[0]->addObject("moon",std::make_unique<DrawableObject>(moon,phong));
-	 m_scenes[0]->addObject("earth",std::make_unique<DrawableObject>(earth,phong));
-	 m_scenes[0]->addObject("login",std::make_unique<DrawableObject>(login,blinPhong_2));
-	 m_scenes[0]->addObject("rocket",std::make_unique<DrawableObject>(rocket,phong));
+	 m_scenes[0]->addLightObject("sun",sun,ambient);
+	 m_scenes[0]->addObject("moon",moon,phong);
+	 m_scenes[0]->addObject("earth",earth,phong);
+	 m_scenes[0]->addObject("login",login,blinPhong_2);
+	 m_scenes[0]->addObject("rocket",rocket,phong);
 
 	 phong.setCamera(m_scenes[0]->getCamera());  phong.setLight(&m_scenes[0]->getLightObject("sun")); 
 	 ambient.setCamera(m_scenes[0]->getCamera()); ambient.setLight(&m_scenes[0]->getLightObject("sun")); 
@@ -315,11 +385,11 @@ void Application::addScenes(){
 	}
 	
 	// Setting up forest scene
-	m_scenes[1]->addObject("firefly",std::make_unique<Light>(sphere,ambient));
-	m_scenes[1]->addObject("ground",std::make_unique<DrawableObject>(ground,textureShader));
-	m_scenes[1]->addObject("trees",std::make_unique<DrawableObject>(trees, treecolor));
-	m_scenes[1]->addObject("shrek", std::make_unique<DrawableObject>(shrek,textureShader));
-	m_scenes[1]->addObject("fiona", std::make_unique<DrawableObject>(fiona,textureShader));
+	m_scenes[1]->addLightObject("firefly",sphere,ambient);
+	m_scenes[1]->addObject("ground",ground,textureShader);
+	m_scenes[1]->addObject("trees",trees,treecolor);
+	m_scenes[1]->addObject("shrek",shrek,textureShader);
+	m_scenes[1]->addObject("fiona",fiona,textureShader); 
 	m_scenes[1]->addSkybox(std::make_shared<Skybox>("../models/skybox.obj",skyTex, skyShader));
 
 	ambient.setCamera(m_scenes[1]->getCamera());
@@ -372,12 +442,12 @@ void Application::addScenes(){
 	 }
 
 	// Setting classroom scene
-	m_scenes[2]->addObject("presentation", std::make_unique<DrawableObject>(presentation,textureShader));
-	m_scenes[2]->addObject("classroom",std::make_unique<DrawableObject>(eb408,diffuseTex));
-	m_scenes[2]->addObject("door",std::make_unique<DrawableObject>(door,diffuseTex));
-	m_scenes[2]->addObject("whiteboard",std::make_unique<DrawableObject>(whiteboard,phongTex));
-	m_scenes[2]->addObject("light",std::make_unique<Light>(sphere,diffuse,glm::vec3(1.0f,1.0f,1.0f),1.0f));
-	m_scenes[2]->addObject("login",std::make_unique<DrawableObject>(login,diffuse));
+	m_scenes[2]->addObject("presentation", presentation,textureShader);
+	m_scenes[2]->addObject("classroom",eb408,diffuseTex);
+	m_scenes[2]->addObject("door",door,diffuseTex);
+	m_scenes[2]->addObject("whiteboard",whiteboard,phongTex);
+	m_scenes[2]->addLightObject("light",sphere,diffuse,glm::vec3(1.0f,1.0f,1.0f),1.0f);
+	m_scenes[2]->addObject("login",login,diffuse);
 	
 	
 	std::vector<glm::vec3> chairPositions = {{-0.74,0,1.17},{-0.74,0,2.17},{-0.74,0,3.17},{-0.74,0,4.17},{-0.74,0,5.17},{-0.74,0,5.9},
@@ -386,7 +456,7 @@ void Application::addScenes(){
 											 {-2.92,0,0.92}};
 	for(int i = 0; i < 19; i++){
 		std::string name = "chair" + std::to_string(i);
-		m_scenes[2]->addObject(name,std::make_unique<DrawableObject>(chair,diffuseTex));
+		m_scenes[2]->addObject(name,chair,diffuseTex);
 	
 		auto composite = std::make_shared<TransformComposite>();
 		composite->addNode(std::make_shared<Translation>(chairPositions.at(i)));
@@ -399,7 +469,7 @@ void Application::addScenes(){
 	std::vector<glm::vec3> tablePositions = {{-1,0,1.7}, {-1,0,3.5}, {-1,0,5.3}, {0.5,0,1.7}, {0.5,0,3.5}, {0.5,0,5.3}, {2.1,0,1.7},{2.1,0,3.5}, {2.1,0,5.3}, {-2.4,0,1.3}};
 	for(int i = 0; i < 10; i++){
 		std::string name = "table" + std::to_string(i);
-		m_scenes[2]->addObject(name,std::make_unique<DrawableObject>(table,diffuseTex));
+		m_scenes[2]->addObject(name,table,diffuseTex);
 
 		auto composite = std::make_shared<TransformComposite>();
 		composite->addNode(std::make_shared<Translation>(tablePositions.at(i)));
@@ -414,7 +484,7 @@ void Application::addScenes(){
 												{-2.53,0.67,0.92}};
 	for(int i = 0; i < 19; i++){
 		std::string name = "computer" + std::to_string(i);
-		m_scenes[2]->addObject(name,std::make_unique<DrawableObject>(computer,diffuseTex));
+		m_scenes[2]->addObject(name,computer,diffuseTex);
 
 		auto composite = std::make_shared<TransformComposite>();
 		composite->addNode(std::make_shared<Translation>(computerPositions.at(i)));
@@ -484,7 +554,7 @@ void Application::run(){
 	float deltaTime = now - lastTime;
     if (deltaTime >= 1.0) {                 // once per second 
         double fps = frameCount / (now - lastTime);
-        std::string title = "ZPG - " + std::to_string(static_cast<int>(fps)) + " FPS";
+        std::string title = "ZPG - " + mode + " mode " + std::to_string(static_cast<int>(fps)) + " FPS";
         glfwSetWindowTitle(win, title.c_str());
         frameCount = 0;
         lastTime = now;

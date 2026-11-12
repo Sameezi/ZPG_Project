@@ -2,8 +2,8 @@
 #include <algorithm>
 
 Light::Light(Model& model, ShaderProgram& emissiveShader,
-             glm::vec3 color, float intensity)
-    : DrawableObject(model, emissiveShader)
+             glm::vec3 color, float intensity, unsigned int id)
+    : DrawableObject(model, emissiveShader,id)
     , m_color(color)
     , m_intensity(intensity)
 {}

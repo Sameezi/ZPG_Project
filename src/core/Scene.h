@@ -9,6 +9,7 @@
 
 #include "graphics/DrawableObject.h"
 #include "graphics/ShaderProgram.h"
+#include "graphics/Model.h"
 #include "graphics/Light.h"
 #include "Camera.h"
 #include "graphics/Skybox.h"
@@ -20,13 +21,17 @@ class Scene{
         void init();
         void update();
         void draw();
-        DrawableObject& addObject(const std::string& name, std::unique_ptr<DrawableObject> obj);
-        Light& addObject(const std::string& name, std::unique_ptr<Light> obj);
+        DrawableObject& addObject(const std::string& name, Model& model, ShaderProgram& shader);
+        DrawableObject& addObject(Model& model, ShaderProgram& shader);
         DrawableObject& getObject(const std::string& name);
+        DrawableObject& getLastObject();
+
+        Light& addLightObject(const std::string& name, Model& model, ShaderProgram& shader, 
+                         glm::vec3 color = glm::vec3(1.0f), float intensity = 1.0f);
         Light& getLightObject(const std::string& name);
+
         Skybox& addSkybox(std::shared_ptr<Skybox> sky);
         
-        unsigned int getUniqID();
         glm::vec4& getBackgroundColor();
         Camera* getCamera();
     private:
@@ -37,5 +42,5 @@ class Scene{
         glm::vec4 backgroundColor{0.0f,0.0f,0.0f,0.0f};
         Camera m_camera;
         unsigned int nextId = 1;
-        std::unordered_map<unsigned int, DrawableObject*> byId;
+        unsigned int getUniqID();
 };

@@ -10,6 +10,7 @@ Window::Window(int width, int height, const char* name){
 
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+	glfwWindowHint(GLFW_STENCIL_BITS, 8);
 	this->handle = glfwCreateWindow(width,height,name,NULL,NULL);
 	if (!handle){
 		glfwTerminate();

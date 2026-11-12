@@ -7,13 +7,13 @@
   **/
 #include "DrawableObject.h"
 
-DrawableObject::DrawableObject(Model& model, ShaderProgram& shader, unsigned int id);
+DrawableObject::DrawableObject(Model& model, ShaderProgram& shader, unsigned int id)
     : m_model(&model)
     , m_shader(&shader)
     , m_id(id)
 {}
 
-DrawableObject::DrawableObject(Model& model, unsigned int id);
+DrawableObject::DrawableObject(Model& model, unsigned int id)
     : m_model(&model)
     , m_shader(nullptr)
     , m_id(id)
@@ -45,11 +45,14 @@ void DrawableObject::draw(ShaderProgram& fallbackShader) {
         for(int i = 0; i < m_model->getTextureCount(); i++)
             shader.setInt("textureUnit" + std::to_string(i+1), i);
 
-    glStencilFunc(GL_ALWAYS, m_id, 0xFF);
     m_model->draw();
 }
 
 glm::vec3 DrawableObject::getPos() const {
     glm::mat4 m = m_transform ? m_transform->getMatrix() : glm::mat4(1.f);
     return glm::vec3(m[3]);
+}
+
+unsigned int DrawableObject::getId() const{
+    return m_id;
 }

@@ -28,6 +28,7 @@ class DrawableObject{
         void setTime(float time);
 
         glm::vec3 getPos() const;
+        unsigned int getId() const;
         void setPos(glm::vec3 pos) const;
 
 

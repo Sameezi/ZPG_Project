@@ -13,6 +13,7 @@
 #include <chrono>
 #include <ctime>
 #include <stdexcept>
+#include <tuple>
 
 #include "Window.h"
 #include "Scene.h"
@@ -43,6 +44,10 @@ class Application{
 		static void cursorPosCallback(GLFWwindow* window, double x, double y);
 		static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 		void onResize(int width, int height);
+		void onClickAddObject(int width, int height, double xpos, double ypos);
+		int getMode();
+		std::tuple<std::string, std::string> editorObject; // <model name, shaderProgram name>
+
 	private:
 		Window window;	
 		Resources resources;
@@ -55,6 +60,6 @@ class Application{
 		double m_lastY{0.0};
 		int fbWidth = 1366, fbHeight = 768;
 		glm::vec3 lightPosition{0.0f};
-
+		std::string mode{"Default"};
 };
 
