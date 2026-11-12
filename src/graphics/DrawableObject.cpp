@@ -7,14 +7,16 @@
   **/
 #include "DrawableObject.h"
 
-DrawableObject::DrawableObject(Model& model, ShaderProgram& shader)
+DrawableObject::DrawableObject(Model& model, ShaderProgram& shader, unsigned int id);
     : m_model(&model)
     , m_shader(&shader)
+    , m_id(id)
 {}
 
-DrawableObject::DrawableObject(Model& model)
+DrawableObject::DrawableObject(Model& model, unsigned int id);
     : m_model(&model)
     , m_shader(nullptr)
+    , m_id(id)
 {}
 
 void DrawableObject::update(float deltat) {
@@ -43,6 +45,7 @@ void DrawableObject::draw(ShaderProgram& fallbackShader) {
         for(int i = 0; i < m_model->getTextureCount(); i++)
             shader.setInt("textureUnit" + std::to_string(i+1), i);
 
+    glStencilFunc(GL_ALWAYS, m_id, 0xFF);
     m_model->draw();
 }
 

@@ -21,6 +21,10 @@ void Scene::update() {
 }
 
 DrawableObject& Scene::addObject(const std::string& name, std::unique_ptr<DrawableObject> obj){
+    if(nextId > 255){
+        std::cerr << "Couldn't add new object, limit of unique id's reached!\n";
+        return *obj;
+    }
     auto [it, inserted] = m_objects.try_emplace(name, std::move(obj));
     return *it->second;
 }
@@ -63,4 +67,12 @@ Light& Scene::getLightObject(const std::string& name){
 Skybox& Scene::addSkybox(std::shared_ptr<Skybox> sky){
     m_skybox = std::move(sky);
     return *m_skybox;
+}
+
+unsigned int Scene::getUniqID(){
+    if(nextId > 255){
+        std::cerr << "Max id's reached!\n";
+        return -1;
+    }
+    return nextId++;
 }

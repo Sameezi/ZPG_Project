@@ -25,7 +25,8 @@ class Scene{
         DrawableObject& getObject(const std::string& name);
         Light& getLightObject(const std::string& name);
         Skybox& addSkybox(std::shared_ptr<Skybox> sky);
-
+        
+        unsigned int getUniqID();
         glm::vec4& getBackgroundColor();
         Camera* getCamera();
     private:
@@ -35,4 +36,6 @@ class Scene{
         std::shared_ptr<Skybox> m_skybox;
         glm::vec4 backgroundColor{0.0f,0.0f,0.0f,0.0f};
         Camera m_camera;
+        unsigned int nextId = 1;
+        std::unordered_map<unsigned int, DrawableObject*> byId;
 };

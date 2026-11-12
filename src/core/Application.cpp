@@ -377,6 +377,7 @@ void Application::addScenes(){
 	m_scenes[2]->addObject("door",std::make_unique<DrawableObject>(door,diffuseTex));
 	m_scenes[2]->addObject("whiteboard",std::make_unique<DrawableObject>(whiteboard,phongTex));
 	m_scenes[2]->addObject("light",std::make_unique<Light>(sphere,diffuse,glm::vec3(1.0f,1.0f,1.0f),1.0f));
+	m_scenes[2]->addObject("login",std::make_unique<DrawableObject>(login,diffuse));
 	
 	
 	std::vector<glm::vec3> chairPositions = {{-0.74,0,1.17},{-0.74,0,2.17},{-0.74,0,3.17},{-0.74,0,4.17},{-0.74,0,5.17},{-0.74,0,5.9},
@@ -443,20 +444,24 @@ void Application::addScenes(){
 	}
 	{
 	 auto composite = std::make_shared<TransformComposite>();
-	 composite->addNode(std::make_shared<Translation>(glm::vec3(0.5,3.0,3.5)));
+	 composite->addNode(std::make_shared<Translation>(glm::vec3(0.5,3.08,3.5)));
 	 composite->addNode(std::make_shared<Scaling>(0.05f));
 	 m_scenes[2]->getLightObject("light").setTransform(composite);
 	}
-
-
+	{
+	 auto composite = std::make_shared<TransformComposite>();
+	 composite->addNode(std::make_shared<Translation>(glm::vec3(0.5,2.5,3.5)));
+	 composite->addNode(std::make_shared<Rotation>(0.0f,glm::vec3(0.0,1.0,0.0),1.0));
+	 composite->addNode(std::make_shared<Scaling>(0.5f));
+	 m_scenes[2]->getObject("login").setTransform(composite);
+	}
 
 	m_scenes[2]->addSkybox(std::make_shared<Skybox>("../models/skybox.obj",skyTex, skyShader));
 	diffuseTex.setCamera(m_scenes[2]->getCamera()); 	diffuseTex.setLight(&m_scenes[2]->getLightObject("light"));
 	phongTex.setCamera(m_scenes[2]->getCamera()); 	    phongTex.setLight(&m_scenes[2]->getLightObject("light"));
 	skyShader.setCamera(m_scenes[2]->getCamera());
-	diffuse.setCamera(m_scenes[2]->getCamera());
+	diffuse.setCamera(m_scenes[2]->getCamera()); 	    diffuse.setLight(&m_scenes[2]->getLightObject("light"));
 	textureShader.setCamera(m_scenes[2]->getCamera());
-
 
 	main_scene = m_scenes[2];
 }
@@ -469,6 +474,7 @@ void Application::run(){
 	GLFWwindow* win = window.get();
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	while (!glfwWindowShouldClose(win))
 	{
 	// FPS

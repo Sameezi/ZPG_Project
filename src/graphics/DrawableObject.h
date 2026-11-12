@@ -18,9 +18,9 @@ class ShaderProgram;
 class DrawableObject{
     public:
     // uses its own shader, built from source
-        DrawableObject(Model& model, ShaderProgram& shader);
+        DrawableObject(Model& model, ShaderProgram& shader, unsigned int id = -1);
     // no shader — scene will supply one at draw time
-        explicit DrawableObject(Model& model);
+        explicit DrawableObject(Model& model, unsigned int id = -1);
         
         void draw(ShaderProgram& fallbackShader);
         void update(float deltat);
@@ -34,6 +34,7 @@ class DrawableObject{
     private:
        Model* m_model; 
        std::shared_ptr<Transform> m_transform;
+       unsigned int m_id;
     protected:
         ShaderProgram* m_shader;
 };

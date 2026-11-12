@@ -35,10 +35,10 @@ class Model{
             GLuint unit;
             std::shared_ptr<Texture> texture;
         };
-
+        std::vector<TextureSlot> m_textures;
         std::vector<float> m_vertices;
         GLuint vbo{0};
-        std::vector<TextureSlot> m_textures;
+
         bool loadOBJ(const std::string& path, std::vector<Vertex>& out);
     protected:
         GLsizei vertexCount{0};
