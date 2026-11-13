@@ -95,7 +95,7 @@ void Application::mouseButtonCallback(GLFWwindow* window, int button, int action
 				std::cout << "Clicked on object: " << id << std::endl;
 		}
 		if(app->getMode() == 1)
-			app->onClickAddObject(app->getWorldPosition(width,height,xpos,ypos));
+			app->onClickAddObject();
 		if(app->getMode() == 2)
 			app->onClickDestObject(id);
 	}
@@ -112,22 +112,6 @@ void Application::mouseButtonCallback(GLFWwindow* window, int button, int action
 void Application::cursorPosCallback(GLFWwindow* window, double x, double y) {
     auto* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
     if (!app) return;
-
-	if(app->getMode() == 1){
-		// getting cursor position
-		double xpos, ypos;
-   		glfwGetCursorPos(window, &xpos, &ypos);
-   		GLint x = static_cast<GLint>(xpos);
-   		GLint y = static_cast<GLint>(ypos);
-
-		// getting window dimensions
-		int width, height;
-		glfwGetFramebufferSize(window, &width, &height);
-
-		app->onPreviewObject(app->getWorldPosition(width,height,xpos,ypos));
-	}else{
-		app->onPreviewObject(glm::vec3(-10000.0f,-10000.0f,-10000.0f));
-	}
 
 	if(app->m_dragging){
 		const float sensitivity = 0.1f;
@@ -172,24 +156,13 @@ glm::vec3 Application::getWorldPosition(int width, int height, double xpos, doub
 	return worldPos;
 }
 
-void Application::onClickAddObject(glm::vec3 position){
-	auto& modelManager = resources.models;
-	auto& shaderManager = resources.shaders;
-	auto& model = *modelManager.get(std::get<0>(editorObject));
-	auto& shader = *shaderManager.get(std::get<1>(editorObject));
-	main_scene->addObject(model,shader);
-
-	auto composite = std::make_shared<TransformComposite>();
-	composite->addNode(std::make_shared<Translation>(position));
-	main_scene->getObject().setTransform(composite);
+void Application::onClickAddObject(){
+	main_scene->addObject(main_scene->getEditorObjModel(),*resources.shaders.get("texture"));
+	main_scene->getObject().setTransform(main_scene->getEditorObjTransform());
 }
 
 void Application::onPreviewObject(glm::vec3 position){
-	auto composite = std::make_shared<TransformComposite>();
-	composite->addNode(std::make_shared<Translation>(position));
-	glm::vec4 rotation = std::get<2>(editorObject);
-	composite->addNode(std::make_shared<Rotation>(rotation.x, glm::vec3(rotation.y,rotation.z,rotation.w)));
-	main_scene->getObject().setTransform(composite);
+	main_scene->setEditorObjTranslation(position);
 }
 
 void Application::onClickDestObject(GLuint id){
@@ -231,11 +204,29 @@ void Application::processInput(){
 	if (glm::length(movement) > 0.0f) {
         movement = glm::normalize(movement);
     }
-
+		
 	float speed = glm::radians(10.0f);   
-	glm::vec4 *rotation = &std::get<2>(editorObject);
-	if (glfwGetKey(win, GLFW_KEY_LEFT)  == GLFW_PRESS) rotation->x += speed;
-	if (glfwGetKey(win, GLFW_KEY_RIGHT) == GLFW_PRESS) rotation->x -= speed;
+	if (glfwGetKey(win, GLFW_KEY_LEFT)  == GLFW_PRESS) {
+		rotation.x += speed;
+		main_scene->setEditorObjRotation(rotation);
+	}
+	if (glfwGetKey(win, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+		rotation.x -= speed;
+		main_scene->setEditorObjRotation(rotation);
+	}	
+
+	if (glfwGetKey(win, GLFW_KEY_UP)  == GLFW_PRESS && !arrows[0]) {
+			if(++modInx > resources.models.size()-1) modInx = 0;
+    		main_scene->setEditorObjModel(resources.models.at(modInx));
+			arrows[0] = true;
+	}
+	if (glfwGetKey(win, GLFW_KEY_DOWN)  == GLFW_PRESS && !arrows[1]) {
+			if(modInx < 0) modInx = resources.models.size()-1;
+    		main_scene->setEditorObjModel(resources.models.at(modInx--));
+			arrows[1] = true;
+	}
+	if (glfwGetKey(win,GLFW_KEY_UP) == GLFW_RELEASE) arrows[0] = false;
+	if (glfwGetKey(win,GLFW_KEY_DOWN) == GLFW_RELEASE) arrows[1] = false;
 
 	main_scene->getCamera()->setMovement(movement * cameraSpeed);
 
@@ -336,13 +327,6 @@ void Application::addScenes(){
 	 auto& skyTex = resources.cubemaps.load("sky", faces);
 
 	 auto& modelManager = resources.models;
-	 auto& sun = modelManager.load("sun",sunVertices,9);
-	 auto& moon = modelManager.load("moon",moonVertices,9);
-	 auto& earth = modelManager.load("earth",earthVertices,9);
-	 auto& login = modelManager.load("login",loginVertices,6);
-	 auto& rocket = modelManager.load("rocket",rocketVertices,9); 
-	 auto& sphere = modelManager.load("sphere",sphereVertices);
-	 auto& trees = resources.imodels.load("trees",treeVertices);
 	 auto& shrek = modelManager.load("shrek","../models/shrek.obj","../textures/shrek.png");
 	 auto& fiona = modelManager.load("fiona","../models/fiona.obj","../textures/fiona.png");
 	 auto& ground = modelManager.load("ground",groundVertices,"../textures/grass.jpg");
@@ -353,10 +337,13 @@ void Application::addScenes(){
 	 auto& whiteboard = modelManager.load("whiteboard","../models/Whiteboard.obj","../textures/T_Whiteboard_BaseColor.png");
 	 auto& door = modelManager.load("door","../models/Door.obj","../textures/T_door_basecolor.png");
 	 auto& computer = modelManager.load("computer","../models/Computer.obj", "../textures/Computer.png");
-
-	 std::get<0>(editorObject) = "chair";
-	 std::get<1>(editorObject) = "texture";
-	 std::get<2>(editorObject) = glm::vec4(0.0f,0.0f,1.0f,0.0f);
+	 auto& sun = modelManager.load("sun",sunVertices,9);
+	 auto& moon = modelManager.load("moon",moonVertices,9);
+	 auto& earth = modelManager.load("earth",earthVertices,9);
+	 auto& login = modelManager.load("login",loginVertices,6);
+	 auto& rocket = modelManager.load("rocket",rocketVertices,9); 
+	 auto& sphere = modelManager.load("sphere",sphereVertices);
+	 auto& trees = resources.imodels.load("trees",treeVertices);
 
 	 // Space example
 	 m_scenes.push_back(new Scene());
@@ -371,6 +358,7 @@ void Application::addScenes(){
 	for(auto& scene : m_scenes){
 		scene->init();
 		scene->getCamera()->setProjMatrix(proj);
+		scene->setEditorObjModel(*modelManager.get("chair"));
 	}
 
 	// Creating the space scene
@@ -381,9 +369,9 @@ void Application::addScenes(){
 	 m_scenes[0]->addObject("login",login,blinPhong_2);
 	 m_scenes[0]->addObject("rocket",rocket,phong);
 
-	 phong.setCamera(m_scenes[0]->getCamera());  phong.setLight(&m_scenes[0]->getLightObject("sun")); 
-	 ambient.setCamera(m_scenes[0]->getCamera()); ambient.setLight(&m_scenes[0]->getLightObject("sun")); 
-	 blinPhong_2.setCamera(m_scenes[0]->getCamera()); blinPhong_2.setLight(&m_scenes[0]->getLightObject("sun")); 
+	 phong.setLight(&m_scenes[0]->getLightObject("sun")); 
+	 ambient.setLight(&m_scenes[0]->getLightObject("sun")); 
+	 blinPhong_2.setLight(&m_scenes[0]->getLightObject("sun")); 
 
 	{ // TRANSFORMS 
 	//sun 
@@ -438,9 +426,6 @@ void Application::addScenes(){
 	m_scenes[1]->addObject("fiona",fiona,textureShader); 
 	m_scenes[1]->addSkybox(std::make_shared<Skybox>("../models/skybox.obj",skyTex, skyShader));
 
-	ambient.setCamera(m_scenes[1]->getCamera());
-	textureShader.setCamera(m_scenes[1]->getCamera());
-	treecolor.setCamera(m_scenes[1]->getCamera());
 	skyShader.setCamera(m_scenes[1]->getCamera());
 	
 	{ // TRANSFORMS
@@ -573,11 +558,10 @@ void Application::addScenes(){
 	}
 
 	m_scenes[2]->addSkybox(std::make_shared<Skybox>("../models/skybox.obj",skyTex, skyShader));
-	diffuseTex.setCamera(m_scenes[2]->getCamera()); 	diffuseTex.setLight(&m_scenes[2]->getLightObject("light"));
-	phongTex.setCamera(m_scenes[2]->getCamera()); 	    phongTex.setLight(&m_scenes[2]->getLightObject("light"));
 	skyShader.setCamera(m_scenes[2]->getCamera());
-	diffuse.setCamera(m_scenes[2]->getCamera()); 	    diffuse.setLight(&m_scenes[2]->getLightObject("light"));
-	textureShader.setCamera(m_scenes[2]->getCamera());
+	diffuseTex.setLight(&m_scenes[2]->getLightObject("light"));
+	phongTex.setLight(&m_scenes[2]->getLightObject("light"));
+	diffuse.setLight(&m_scenes[2]->getLightObject("light"));
 
 	main_scene = m_scenes[2];
 }
@@ -605,6 +589,23 @@ void Application::run(){
         frameCount = 0;
         lastTime = now;
     }
+
+	// if in insert mode
+	if(getMode() == 1){
+		// getting cursor position
+		double xpos, ypos;
+   		glfwGetCursorPos(win, &xpos, &ypos);
+   		GLint x = static_cast<GLint>(xpos);
+   		GLint y = static_cast<GLint>(ypos);
+
+		// getting window dimensions
+		int width, height;
+		glfwGetFramebufferSize(win, &width, &height);
+
+		onPreviewObject(getWorldPosition(width,height,xpos,ypos));
+	}else{
+		onPreviewObject(glm::vec3(-10000.0f,-10000.0f,-10000.0f));
+	}
 	
 	// Clear color and depth buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

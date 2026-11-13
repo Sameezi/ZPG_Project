@@ -13,7 +13,8 @@ Scene::Scene() = default;
 Scene::~Scene() = default;
 
 void Scene::init() {
-    m_defaultShader = std::make_unique<ShaderProgram>("shaders/basic.vert", "shaders/basic.frag");
+    m_defaultShader = std::make_unique<ShaderProgram>("shaders/texture.vert", "shaders/texture.frag");
+    m_defaultShader->setCamera(getCamera());
 }
 
 void Scene::update() {
@@ -31,6 +32,7 @@ DrawableObject& Scene::addObject(const std::string& name, Model& model,ShaderPro
     m_objectsById[raw->getId()] = raw;
 
     auto [it, inserted] = m_objects.try_emplace(name, std::move(obj));
+    shader.setCamera(getCamera());
     return *it->second;
 }
 
@@ -82,6 +84,7 @@ void Scene::draw() {
         obj->draw(*m_defaultShader);
         obj->notify();
     }
+        if(editorObject) editorObject->draw(*m_defaultShader);
    
 }
 
@@ -132,4 +135,34 @@ unsigned int Scene::getUniqID(){
         return -1;
     }
     return nextId++;
+}
+
+void Scene::setEditorObjModel(Model& model) {
+    editorAttr.model = &model;
+    editorObject = std::make_unique<DrawableObject>(model);
+    editorObject->setTransform(getEditorObjTransform());
+}
+
+void Scene::setEditorObjRotation(const glm::vec4& rotation) {
+    editorAttr.rotation = rotation;
+    if (editorObject)
+        editorObject->setTransform(getEditorObjTransform());
+}
+
+void Scene::setEditorObjTranslation(const glm::vec3& translation) {
+    editorAttr.translation = translation;
+    if (editorObject)
+        editorObject->setTransform(getEditorObjTransform());
+}
+
+Model& Scene::getEditorObjModel() {
+    return *editorAttr.model;  
+}
+
+std::shared_ptr<TransformComposite> Scene::getEditorObjTransform() const {
+    const glm::vec4& r = editorAttr.rotation;
+    auto composite = std::make_shared<TransformComposite>();
+    composite->addNode(std::make_shared<Translation>(editorAttr.translation));
+    composite->addNode(std::make_shared<Rotation>(r.x, glm::vec3(r.y, r.z, r.w)));
+    return composite;
 }

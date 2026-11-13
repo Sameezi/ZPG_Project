@@ -13,7 +13,6 @@
 #include <chrono>
 #include <ctime>
 #include <stdexcept>
-#include <tuple>
 
 #include "Window.h"
 #include "Scene.h"
@@ -44,7 +43,7 @@ class Application{
 		static void cursorPosCallback(GLFWwindow* window, double x, double y);
 		static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 		void onResize(int width, int height);
-		void onClickAddObject(glm::vec3 position);
+		void onClickAddObject();
 		void onPreviewObject(glm::vec3 position);
 		void onClickDestObject(GLuint id);
 		int getMode();
@@ -58,12 +57,14 @@ class Application{
 
 		bool m_dragging{false};
 		bool k_pressed{false};
+		bool arrows[2]{false};
 		double m_lastX{0.0};
 		double m_lastY{0.0};
 		int fbWidth = 1366, fbHeight = 768;
-		glm::vec3 lightPosition{0.0f};
 		std::string mode{"Default"};
-		std::tuple<std::string, std::string, glm::vec4> editorObject; // <model name, shaderProgram name, rotation>
+		int modInx = 0;
+		glm::vec4 rotation{0.f, 0.f, 1.f, 0.f};
+
 
 		glm::vec3 getWorldPosition(int width, int height, double xpos, double ypos);
 };
