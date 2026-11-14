@@ -22,7 +22,7 @@ class Scene{
         Scene();
         ~Scene();
         void init();
-        void update();
+        void update(float deltat);
         void draw();
         DrawableObject& addObject(const std::string& name, Model& model, ShaderProgram& shader);
         DrawableObject& addObject(Model& model, ShaderProgram& shader);

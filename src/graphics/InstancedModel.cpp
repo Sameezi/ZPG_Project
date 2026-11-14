@@ -32,10 +32,10 @@ InstancedModel::~InstancedModel() {
     }
 }
 
-void InstancedModel::setInstances(const std::vector<TransformComposite>& composites){
+void InstancedModel::setInstances(const std::vector<std::shared_ptr<TransformComposite>>& composites){
     std::vector<glm::mat4> matrices;
     for (auto& composite : composites){
-        matrices.push_back(composite.getMatrix());
+        matrices.push_back(composite->getMatrix());
     }
     icount = static_cast<GLsizei>(matrices.size());
     glBindBuffer(GL_ARRAY_BUFFER, ivbo);

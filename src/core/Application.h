@@ -18,6 +18,7 @@
 #include "Scene.h"
 
 #include "ResourceManager.hpp"
+#include "parametricAxis.h"
 
 
 struct Resources {
@@ -46,6 +47,8 @@ class Application{
 		void onClickAddObject();
 		void onPreviewObject(glm::vec3 position);
 		void onClickDestObject(GLuint id);
+		void onClickSelectObject(GLuint id);
+		GLuint getSelectedId();
 		int getMode();
 
 	private:
@@ -61,11 +64,11 @@ class Application{
 		double m_lastX{0.0};
 		double m_lastY{0.0};
 		int fbWidth = 1366, fbHeight = 768;
+		GLuint selectedId = -1;
+
 		std::string mode{"Default"};
 		int modInx = 0;
 		glm::vec4 rotation{0.f, 0.f, 1.f, 0.f};
-
-
-		glm::vec3 getWorldPosition(int width, int height, double xpos, double ypos);
+		glm::vec3 getWorldPosition();
 };
 

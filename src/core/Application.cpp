@@ -91,13 +91,18 @@ void Application::mouseButtonCallback(GLFWwindow* window, int button, int action
 
 		if(app->getMode() == 0){
 			// selection range only from 1-255
-			if (id != 0)
+			if (id != 0){
 				std::cout << "Clicked on object: " << id << std::endl;
+				app->onClickSelectObject(id);
+			}
 		}
-		if(app->getMode() == 1)
+		if(app->getMode() == 1) 
 			app->onClickAddObject();
 		if(app->getMode() == 2)
 			app->onClickDestObject(id);
+		if(app->getMode() == 3){
+			app->main_scene->getObject(app->getSelectedId()).setParametricAxis(app->getWorldPosition()); // get last added object and set it's parametric axis
+		}
 	}
 	
 	// Movement camera around
@@ -142,7 +147,18 @@ void Application::onResize(int width, int height)
 	}
 }
 
-glm::vec3 Application::getWorldPosition(int width, int height, double xpos, double ypos){
+glm::vec3 Application::getWorldPosition(){
+	GLFWwindow* win = window.get();
+	// getting cursor position
+		double xpos, ypos;
+   		glfwGetCursorPos(win, &xpos, &ypos);
+   		GLint x = static_cast<GLint>(xpos);
+   		GLint y = static_cast<GLint>(ypos);
+
+	// getting window dimensions
+		int width, height;
+		glfwGetFramebufferSize(win, &width, &height);
+
 	float winX = static_cast<float>(xpos);
 	float winY = static_cast<float>(height) - static_cast<float>(ypos) - 1.0f;
 	// getting depth from depth buffer
@@ -170,6 +186,14 @@ void Application::onClickDestObject(GLuint id){
 		std::cout << "Destroyed user object " << id << std::endl;
 }
 
+void Application::onClickSelectObject(GLuint id){
+	selectedId = id;	
+}
+
+GLuint Application::getSelectedId(){
+	return selectedId;
+}
+
 int Application::getMode(){
 	if(mode.compare("Default") == 0){
 		return 0;
@@ -177,8 +201,10 @@ int Application::getMode(){
 		return 1;
 	}else if(mode.compare("Delete") == 0){
 		return 2;
-	}else{
+	}else if(mode.compare("Parametric axis") == 0){
 		return 3;
+	}else{
+		return 4;
 	}
 }
 
@@ -204,7 +230,9 @@ void Application::processInput(){
 	if (glm::length(movement) > 0.0f) {
         movement = glm::normalize(movement);
     }
-		
+
+	main_scene->getCamera()->setMovement(movement * cameraSpeed);
+	
 	float speed = glm::radians(10.0f);   
 	if (glfwGetKey(win, GLFW_KEY_LEFT)  == GLFW_PRESS) {
 		rotation.x += speed;
@@ -228,8 +256,6 @@ void Application::processInput(){
 	if (glfwGetKey(win,GLFW_KEY_UP) == GLFW_RELEASE) arrows[0] = false;
 	if (glfwGetKey(win,GLFW_KEY_DOWN) == GLFW_RELEASE) arrows[1] = false;
 
-	main_scene->getCamera()->setMovement(movement * cameraSpeed);
-
 	if(glfwGetKey(win,GLFW_KEY_1) == GLFW_PRESS){
 		glm::vec4 backgroundColor = this->main_scene->getBackgroundColor();
 	 	glClearColor(backgroundColor.x,backgroundColor.y,backgroundColor.z,backgroundColor.w);
@@ -250,6 +276,8 @@ void Application::processInput(){
 			mode = "Insert";
 		}else if(mode.compare("Insert") == 0){
 			mode = "Delete";
+		}else if(mode.compare("Delete") == 0){
+			mode = "Parametric axis";
 		}else{
 			mode = "Default";
 		}
@@ -296,12 +324,10 @@ void Application::addScenes(){
      0.0f,  0.5f, 1.0f,   n.x, n.y, n.z,   0.0f, 1.0f,
     -0.5f,  0.5f, 1.0f,   n.x, n.y, n.z,   1.0f, 1.0f,
     -0.5f,  0.0f, 1.0f,   n.x, n.y, n.z,   1.0f, 0.0f,
-
      0.0f,  0.0f, 1.0f,   n.x, n.y, n.z,   0.0f, 0.0f,
      0.0f,  0.5f, 1.0f,   n.x, n.y, n.z,   0.0f, 1.0f,
     -0.5f,  0.0f, 1.0f,   n.x, n.y, n.z,   1.0f, 0.0f
 	};
-
 
 	 auto& shaderManager = resources.shaders;
 	 auto& phong = shaderManager.load("phong",  "shaders/lighting_9float.vert",  "shaders/phong.frag");
@@ -352,6 +378,7 @@ void Application::addScenes(){
 	 // Classroom example
 	 m_scenes.push_back(new Scene());
 
+	 // initialising scenes, recalculating perespective, setting editor object
 	glm::mat4 proj = glm::perspective(glm::radians(60.0f),
  		                               800.0f / 600.0f,
   		                               0.1f, 100.0f);
@@ -360,6 +387,15 @@ void Application::addScenes(){
 		scene->getCamera()->setProjMatrix(proj);
 		scene->setEditorObjModel(*modelManager.get("chair"));
 	}
+		
+	//Helper composite function
+	auto createTransform = [](glm::vec3 translation,glm::vec3 scale = glm::vec3(1.0f), float angle = 0.0f, glm::vec3 rotation = glm::vec3{0.0f,1.0f,0.0f}, float animSpeed = 0.0f) {
+		auto t = std::make_shared<TransformComposite>();
+		t->addNode(std::make_shared<Translation>(translation));
+		t->addNode(std::make_shared<Rotation>(glm::radians(angle),rotation,animSpeed));
+		t->addNode(std::make_shared<Scaling>(scale));
+		return t;
+	};	
 
 	// Creating the space scene
 
@@ -399,13 +435,7 @@ void Application::addScenes(){
 	moon->addNode(std::make_shared<Translation>(glm::vec3(0.2f, 0.f, 0.f)));              
 	moon->addNode(std::make_shared<Scaling>(.01f));
 	m_scenes[0]->getObject("moon").setTransform(moon);
-
-	auto login = std::make_shared<TransformComposite>();
-	login->addNode(std::make_shared<Translation>(glm::vec3(1.0f, 1.0f, 1.0f)));              
-	login->addNode(std::make_shared<Rotation>(0.f, glm::vec3(0.f, 1.f, 0.f), 2.f));        
-	login->addNode(std::make_shared<Scaling>(.25f));
-	m_scenes[0]->getObject("login").setTransform(login);
-
+		
 	// earth orbit around sun
 	auto shipOrbit = std::make_shared<TransformComposite>();
 	shipOrbit->addNode(std::make_shared<Rotation>(0.f, glm::vec3(0.f, -1.f, 0.f), 0.5f));
@@ -417,7 +447,10 @@ void Application::addScenes(){
 	rocket->addNode(std::make_shared<Scaling>(.00009f));
 	m_scenes[0]->getObject("rocket").setTransform(rocket);
 	}
-	
+
+	m_scenes[0]->getObject("login").setTransform(createTransform(glm::vec3(1.0f,1.0f,1.0f), glm::vec3(0.25f), 0.0f, glm::vec3(0.0f,1.0f,0.0f), 2.0f));
+
+
 	// Setting up forest scene
 	m_scenes[1]->addLightObject("firefly",sphere,ambient);
 	m_scenes[1]->addObject("ground",ground,textureShader);
@@ -425,53 +458,26 @@ void Application::addScenes(){
 	m_scenes[1]->addObject("shrek",shrek,textureShader);
 	m_scenes[1]->addObject("fiona",fiona,textureShader); 
 	m_scenes[1]->addSkybox(std::make_shared<Skybox>("../models/skybox.obj",skyTex, skyShader));
-
 	skyShader.setCamera(m_scenes[1]->getCamera());
 	
-	{ // TRANSFORMS
-	  auto composite = std::make_shared<TransformComposite>();
-	  composite->addNode(std::make_shared<Translation>(glm::vec3(.0f,25.5f,.0f)));
-	  composite->addNode(std::make_shared<Scaling>(.02f));
-	  m_scenes[1]->getLightObject("firefly").setTransform(composite);
-	}
-	{ 
-	 auto composite = std::make_shared<TransformComposite>();
-	 composite->addNode(std::make_shared<Translation>(glm::vec3(25.0f,-100.0f,25.0f)));
-	 composite->addNode(std::make_shared<Rotation>(glm::radians(-90.0f), glm::vec3(1,0,0)));
-	 composite->addNode(std::make_shared<Scaling>(100.0f));
-	 m_scenes[1]->getObject("ground").setTransform(composite);
-	} 
+	m_scenes[1]->getLightObject("firefly").setTransform(createTransform(glm::vec3(0.0f,25.5f,0.0f),glm::vec3(0.2f)));
+	m_scenes[1]->getObject("ground").setTransform(createTransform(glm::vec3(25.0f,-100.0f,25.0f), glm::vec3(100.0f), -90.0f, glm::vec3(1,0,0)));
+	m_scenes[1]->getObject("shrek").setTransform(createTransform(glm::vec3(0.0f,0.0f,0.0f),glm::vec3(-1,1,1)));
+	m_scenes[1]->getObject("fiona").setTransform(createTransform(glm::vec3(3.0f,0.0f,0.0f),glm::vec3(-1,1,1)));
 	{
-	 std::vector<TransformComposite> composites;
+	 std::vector<std::shared_ptr<TransformComposite>> composites;
 	 for(int i = 0; i <= 73; i++){
 	 float randomScale = randomFloat(0.1f, 0.50f); 
 	 float randomZ = randomFloat(-25.0f, 25.0f);
 	 float randomX = randomFloat(-25.0f, 25.0f);
 	 float randomRot = randomFloat(-90.0f,90.0f);
-
-	 TransformComposite composite; 
-	 composite.addNode(std::make_shared<Translation>(glm::vec3(randomX, .0f, randomZ)));
-	 composite.addNode(std::make_shared<Rotation>(glm::radians(randomRot),glm::vec3(0.0,1.0,0.0)));
-	 composite.addNode(std::make_shared<Scaling>(randomScale));
-	 composites.push_back(std::move(composite));
+	
+	 composites.push_back(createTransform(glm::vec3(randomX, 0.0f, randomZ), glm::vec3(randomScale), randomRot));
 	 }
 	 trees.setInstances(composites);
 	 m_scenes[1]->getObject("trees");
 	 }
-
-	 {
-	 auto composite = std::make_shared<TransformComposite>();
-	 composite->addNode(std::make_shared<Translation>(glm::vec3(.0f,0.0f,.0f)));
-	 composite->addNode(std::make_shared<Scaling>(glm::vec3(-1,1,1)));
-	 m_scenes[1]->getObject("shrek").setTransform(composite);
-	 }
-	 { 
-	 auto composite = std::make_shared<TransformComposite>();
-	 composite->addNode(std::make_shared<Translation>(glm::vec3(3.0f,.0f,.0f)));
-	 composite->addNode(std::make_shared<Scaling>(glm::vec3(-1,1,1)));
-	 m_scenes[1]->getObject("fiona").setTransform(composite);
-	 }
-
+	
 	// Setting classroom scene
 	m_scenes[2]->addObject("presentation", presentation,textureShader);
 	m_scenes[2]->addObject("classroom",eb408,diffuseTex);
@@ -485,78 +491,33 @@ void Application::addScenes(){
 	 										 {0.82,0,1.17},{0.82,0,2.17},{0.82,0,3.17},{0.82,0,4.17},{0.82,0,5.17},{0.82,0,5.9},
 											 {2.42,0,1.17},{2.42,0,2.17},{2.42,0,3.17},{2.42,0,4.17},{2.42,0,5.17},{2.42,0,5.9},
 											 {-2.92,0,0.92}};
-	for(int i = 0; i < 19; i++){
-		std::string name = "chair" + std::to_string(i);
-		m_scenes[2]->addObject(name,chair,diffuseTex);
-	
-		auto composite = std::make_shared<TransformComposite>();
-		composite->addNode(std::make_shared<Translation>(chairPositions.at(i)));
-		if(i == 18) composite->addNode(std::make_shared<Rotation>(glm::radians(90.0f),glm::vec3(0.0,1.0,0.0)));
-		else composite->addNode(std::make_shared<Rotation>(glm::radians(-90.0f),glm::vec3(0.0,1.0,.0)));
-
-		m_scenes[2]->getObject(name).setTransform(composite);
-	}
-
 	std::vector<glm::vec3> tablePositions = {{-1,0,1.7}, {-1,0,3.5}, {-1,0,5.3}, {0.5,0,1.7}, {0.5,0,3.5}, {0.5,0,5.3}, {2.1,0,1.7},{2.1,0,3.5}, {2.1,0,5.3}, {-2.4,0,1.3}};
-	for(int i = 0; i < 10; i++){
-		std::string name = "table" + std::to_string(i);
-		m_scenes[2]->addObject(name,table,diffuseTex);
-
-		auto composite = std::make_shared<TransformComposite>();
-		composite->addNode(std::make_shared<Translation>(tablePositions.at(i)));
-		composite->addNode(std::make_shared<Rotation>(glm::radians(90.0f),glm::vec3(0.0,1.0,.0)));
-
-		m_scenes[2]->getObject(name).setTransform(composite);
-	}
-
 	std::vector<glm::vec3> computerPositions = {{-1.12,0.67,1.25},{-1.12,0.67,2.25},{-1.12,0.67,3.25},{-1.12,0.67,4.20},{-1.12,0.67,5.25},{-1.17,0.67,6.0},
 												{0.48,0.67,1.25},{0.48,0.67,2.25},{0.48,0.67,3.25},{0.48,0.67,4.20},{0.48,0.67,5.25},{0.48,0.67,6.0},
 												{2.1,0.67,1.25},{2.1,0.67,2.25},{2.1,0.67,3.25},{2.1,0.67,4.20},{2.1,0.67,5.25},{2.1,0.67,6.0},
 												{-2.53,0.67,0.92}};
+
+	for(int i = 0; i < 19; i++){
+		std::string name = "chair" + std::to_string(i);
+		m_scenes[2]->addObject(name,chair,diffuseTex);
+		m_scenes[2]->getObject(name).setTransform(createTransform(chairPositions.at(i),glm::vec3(1.0f), i == 18 ? 90.0f : -90.0f));
+	}
+	for(int i = 0; i < 10; i++){
+		std::string name = "table" + std::to_string(i);
+		m_scenes[2]->addObject(name,table,diffuseTex);
+		m_scenes[2]->getObject(name).setTransform(createTransform(tablePositions.at(i), glm::vec3(1.0f), 90.0f));
+	}
 	for(int i = 0; i < 19; i++){
 		std::string name = "computer" + std::to_string(i);
 		m_scenes[2]->addObject(name,computer,diffuseTex);
-
-		auto composite = std::make_shared<TransformComposite>();
-		composite->addNode(std::make_shared<Translation>(computerPositions.at(i)));
-		if(i == 18) composite->addNode(std::make_shared<Rotation>(glm::radians(-90.0f),glm::vec3(0.0,1.0,0.0)));
-		else composite->addNode(std::make_shared<Rotation>(glm::radians(90.0f),glm::vec3(0.0,1.0,.0)));
-		composite->addNode(std::make_shared<Scaling>(0.001));
-
-		m_scenes[2]->getObject(name).setTransform(composite);
+		m_scenes[2]->getObject(name).setTransform(createTransform(computerPositions.at(i), glm::vec3(0.001f), i == 18 ? -90.0f : 90.0f));
 	}	
 
-	{
-	 auto composite = std::make_shared<TransformComposite>();
-	 composite->addNode(std::make_shared<Translation>(glm::vec3(-3.8f,.0f,4.0f)));
-	 m_scenes[2]->getObject("whiteboard").setTransform(composite);
-	}
-	{
-	 auto composite = std::make_shared<TransformComposite>();
-	 composite->addNode(std::make_shared<Translation>(glm::vec3(-2.78f,0.985f,5.14f)));
-  	 composite->addNode(std::make_shared<Rotation>(glm::radians(-90.0f),glm::vec3(0.0,1.0,0.0)));
-	 composite->addNode(std::make_shared<Scaling>(glm::vec3(4.470f,2.51f,1.0f)));
-	 m_scenes[2]->getObject("presentation").setTransform(composite);
-	}
-	{ 
-	 auto composite = std::make_shared<TransformComposite>();
-	 composite->addNode(std::make_shared<Translation>(glm::vec3(-2.39f,.0f,7.7f)));
-	 m_scenes[2]->getObject("door").setTransform(composite);
-	}
-	{
-	 auto composite = std::make_shared<TransformComposite>();
-	 composite->addNode(std::make_shared<Translation>(glm::vec3(0.5,3.08,3.5)));
-	 composite->addNode(std::make_shared<Scaling>(0.05f));
-	 m_scenes[2]->getLightObject("light").setTransform(composite);
-	}
-	{
-	 auto composite = std::make_shared<TransformComposite>();
-	 composite->addNode(std::make_shared<Translation>(glm::vec3(0.5,2.5,3.5)));
-	 composite->addNode(std::make_shared<Rotation>(0.0f,glm::vec3(0.0,1.0,0.0),1.0));
-	 composite->addNode(std::make_shared<Scaling>(0.5f));
-	 m_scenes[2]->getObject("login").setTransform(composite);
-	}
-
+	m_scenes[2]->getObject("whiteboard").setTransform(createTransform(glm::vec3(-3.8f,0.0f,4.0f)));
+	m_scenes[2]->getObject("presentation").setTransform(createTransform(glm::vec3(-2.78f,0.985f,5.14f), glm::vec3(4.470f, 2.51f, 1.0f), -90.0f));
+	m_scenes[2]->getObject("door").setTransform(createTransform(glm::vec3(-2.39f,0.0f,7.7f)));
+	m_scenes[2]->getLightObject("light").setTransform(createTransform(glm::vec3(0.5f,3.08f,3.5f),glm::vec3(0.05f)));
+	m_scenes[2]->getObject("login").setTransform(createTransform(glm::vec3(0.5f,2.5f,3.5f), glm::vec3(0.5f)));
 	m_scenes[2]->addSkybox(std::make_shared<Skybox>("../models/skybox.obj",skyTex, skyShader));
 	skyShader.setCamera(m_scenes[2]->getCamera());
 	diffuseTex.setLight(&m_scenes[2]->getLightObject("light"));
@@ -569,44 +530,38 @@ void Application::addScenes(){
 
 void Application::run(){
 	double lastTime = glfwGetTime();
-	int frameCount = 0;
 	glEnable(GL_MULTISAMPLE);
 	GLFWwindow* win = window.get();
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	double lastFrameTime = glfwGetTime();
+	double lastFpsTime   = lastFrameTime;
+	int frameCount = 0;
+
 	while (!glfwWindowShouldClose(win))
 	{
 	// FPS
 	double now = glfwGetTime();
+	float deltaTime = static_cast<float>(now - lastFrameTime);  
+	lastFrameTime = now;
+
 	frameCount++;
-	
-	float deltaTime = now - lastTime;
-    if (deltaTime >= 1.0) {                 // once per second 
-        double fps = frameCount / (now - lastTime);
-        std::string title = "ZPG - " + mode + " mode " + std::to_string(static_cast<int>(fps)) + " FPS";
-        glfwSetWindowTitle(win, title.c_str());
-        frameCount = 0;
-        lastTime = now;
-    }
+	if (now - lastFpsTime >= 1.0) {
+		double fps = frameCount / (now - lastFpsTime);
+		std::string title = "ZPG - " + mode + " mode " + std::to_string(static_cast<int>(fps)) + " FPS";
+		glfwSetWindowTitle(win, title.c_str());
+		frameCount = 0;
+		lastFpsTime = now;
+	}
 
 	// if in insert mode
 	if(getMode() == 1){
-		// getting cursor position
-		double xpos, ypos;
-   		glfwGetCursorPos(win, &xpos, &ypos);
-   		GLint x = static_cast<GLint>(xpos);
-   		GLint y = static_cast<GLint>(ypos);
-
-		// getting window dimensions
-		int width, height;
-		glfwGetFramebufferSize(win, &width, &height);
-
-		onPreviewObject(getWorldPosition(width,height,xpos,ypos));
+		onPreviewObject(getWorldPosition());
 	}else{
 		onPreviewObject(glm::vec3(-10000.0f,-10000.0f,-10000.0f));
 	}
-	
+
 	// Clear color and depth buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	main_scene->getCamera()->update(1.0f);
@@ -619,6 +574,7 @@ void Application::run(){
 	// Draw scene
 	glEnable(GL_DEPTH_TEST);
 	main_scene->draw();
+	main_scene->update(deltaTime);
 
 	glfwSwapBuffers(win);
 	glfwPollEvents();

@@ -17,8 +17,10 @@ void Scene::init() {
     m_defaultShader->setCamera(getCamera());
 }
 
-void Scene::update() {
-    // camera/animation updates to be included..
+void Scene::update(float deltat) {
+    for (auto& [name, obj] : m_objects) {
+        obj->update(deltat);
+    }
 }
 
 DrawableObject& Scene::addObject(const std::string& name, Model& model,ShaderProgram& shader){
@@ -66,13 +68,12 @@ Light& Scene::addLightObject(const std::string& name, Model& model, ShaderProgra
 }
 
 void Scene::draw() {
-
-    if(m_skybox) m_skybox->draw();
-
     glEnable(GL_STENCIL_TEST);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     glClearStencil(0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+    if(m_skybox) m_skybox->draw();
 
     for (auto& [name, obj] : m_objects) {
         glStencilFunc(GL_ALWAYS, obj->getId(), 0xFF);
@@ -99,7 +100,6 @@ glm::vec4& Scene::getBackgroundColor(){
 DrawableObject& Scene::getObject(const std::string& name){
     return *m_objects.at(name);
 }
-
 
 DrawableObject& Scene::getObject(GLuint id){
     if(id == -1){

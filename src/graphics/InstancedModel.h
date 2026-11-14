@@ -8,7 +8,7 @@ class InstancedModel : public Model{
         explicit InstancedModel(const std::vector<float>& vertices);
         ~InstancedModel() override;
         void draw() const override;
-        void setInstances(const std::vector<TransformComposite>& composites);
+        void setInstances(const std::vector<std::shared_ptr<TransformComposite>>& instances);
     private:
         GLuint ivbo{0};
         GLsizei icount{0};
