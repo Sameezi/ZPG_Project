@@ -19,10 +19,13 @@ src/graphics/Model.cpp
 src/graphics/Shader.cpp
 src/graphics/ShaderProgram.cpp
 src/graphics/InstancedModel.cpp
-src/graphics/Light.cpp
 src/graphics/Texture.cpp
 src/graphics/Cubemap.cpp
 src/graphics/Skybox.cpp
+src/graphics/lights/LightObject.cpp
+src/graphics/lights/PointLight.cpp
+src/graphics/lights/SpotLight.cpp
+src/graphics/lights/DirLight.cpp
 src/transformation/Rotation.cpp
 src/transformation/Scaling.cpp
 src/transformation/Translation.cpp

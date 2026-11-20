@@ -10,7 +10,10 @@
 #include "graphics/DrawableObject.h"
 #include "graphics/ShaderProgram.h"
 #include "graphics/Model.h"
-#include "graphics/Light.h"
+#include "graphics/lights/LightObject.h"
+#include "graphics/lights/PointLight.h"
+#include "graphics/lights/DirLight.h"
+#include "graphics/Cubemap.h"
 #include "Camera.h"
 #include "graphics/Skybox.h"
 #include "transformation/Translation.h"
@@ -30,12 +33,11 @@ class Scene{
         DrawableObject& getObject(GLuint id = -1);
         bool removeObject(GLuint id = -1);
 
-        Light& addLightObject(const std::string& name, Model& model, ShaderProgram& shader, 
-                         glm::vec3 color = glm::vec3(1.0f), float intensity = 1.0f);
-        Light& getLightObject(const std::string& name);
+        LightObject& addLightObject(const std::string& name, Model& model, ShaderProgram& shader,std::shared_ptr<Light>);
+        LightObject& getLightObject(const std::string& name);
 
-        Skybox& addSkybox(std::shared_ptr<Skybox> sky);
-                  
+        Skybox& addSkybox(const std::string& modelPath,Cubemap& model, ShaderProgram& shader);
+                 
         void setEditorObjModel(Model& model);
         void setEditorObjRotation(const glm::vec4& rotation);      
         void setEditorObjTranslation(const glm::vec3& translation);
@@ -47,7 +49,7 @@ class Scene{
     private:
         std::unordered_map<std::string, std::unique_ptr<DrawableObject>> m_objects; 
         std::unordered_map<GLuint, DrawableObject*> m_objectsById;
-        std::unordered_map<std::string, std::unique_ptr<Light>> m_lightObjects;
+        std::unordered_map<std::string, std::unique_ptr<LightObject>> m_lightObjects;
         std::unique_ptr<ShaderProgram> m_defaultShader;
         std::shared_ptr<Skybox> m_skybox;
 
@@ -62,4 +64,6 @@ class Scene{
         Camera m_camera;
         unsigned int nextId = 1;
         unsigned int getUniqID();
+
+        GLuint lightsUBO{0};
 };

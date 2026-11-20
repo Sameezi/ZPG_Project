@@ -36,12 +36,12 @@ class DrawableObject{
 
     private:
        Model* m_model; 
-       std::shared_ptr<Transform> m_transform;
        unsigned int m_id;
        glm::vec3 acceleration{0.0f};
        glm::vec3 position{0.0f};
        parametricAxis m_axis;
        bool m_hasAxis{false};
     protected:
-        ShaderProgram* m_shader;
+       ShaderProgram* m_shader;
+       std::shared_ptr<Transform> m_transform;
 };

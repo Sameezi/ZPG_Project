@@ -8,7 +8,6 @@
 
 #include "ShaderProgram.h"
 #include "core/Camera.h"
-#include "Light.h"
 
 ShaderProgram::ShaderProgram(const std::string& vertexSource,const std::string& fragmentSource):
 	vertexShader(ShaderType::Vertex, vertexSource),
@@ -158,10 +157,6 @@ void ShaderProgram::setCamera(Camera* camera){
 	camera->addObserver(this);	
 }
 
-void ShaderProgram::setLight(Light* light){
-	light->addObserver(this);	
-}
-
 void ShaderProgram::update(const Camera& camera) {
 	use();
 	setMat4("projectionMatrix",camera.getProjMatrix());
@@ -175,14 +170,5 @@ void ShaderProgram::update(const Camera& camera) {
 
 	if(viewUfExist){ // For lighting
 		setVec3("viewPos", camera.getPos());
-	}
-}
-
-void ShaderProgram::update(const Light& light) {
-	use();
-	if(lightUfExist){
-		setVec3("lightPos", light.getPos());
-		setVec3("lightColor", light.getColor());
-		setFloat("lightIntensity",light.getIntensity());
 	}
 }

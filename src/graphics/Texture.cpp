@@ -2,15 +2,16 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
+#include "../core/Logger.hpp"
 
 Texture::Texture(const std::string& path, const std::string& wrapping){
     stbi_set_flip_vertically_on_load(true);
     unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 4);
 
     if(!data){
-        std::cerr << "Error loading texture: " << path; 
+       Logger::Error("Error loading texture: " , path);
     }else{
-        std::cout << path << " x " << width << " y " << height << " channels: " << channels << std::endl; 
+        Logger::Debug( path , " x " , width , " y " , height , " channels: " , channels); 
     }
     glActiveTexture(GL_TEXTURE0);
     glGenTextures(1, &id);

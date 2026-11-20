@@ -8,6 +8,7 @@
 
 #include "Model.h"
 #include <stdexcept>
+#include "../core/Logger.hpp"
 
 Model::Model(const std::vector<float>& vertices)
     : vertexCount(static_cast<GLsizei>(vertices.size() / 6)) // pos+normal = 6 floats/vertex
@@ -147,7 +148,7 @@ Model::Model(const std::string& modPath, const std::string& texPath)
     glBindVertexArray(0);
     vertexCount = (GLsizei)vertices.size();
 
-    std::cout<<modPath<<" loaded with " << vertexCount << " vertices"<<std::endl;
+    Logger::Info(modPath, " loaded with " ,vertexCount , " vertices");
     addTexture(0,std::make_unique<Texture>(texPath));
 }
 

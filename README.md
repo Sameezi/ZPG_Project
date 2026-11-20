@@ -6,7 +6,8 @@ This is my project for a subject ZPG (Basics of computer graphics). This project
 ```Comment
 glad/glad.h
 GLFW/glfw3.h
-glm/* 
+glm/*
+stb/stb_library.h
 ```
 
 ## Build and run

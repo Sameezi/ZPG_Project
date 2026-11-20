@@ -12,7 +12,7 @@
 
 class Camera;
 class Light;
-class ShaderProgram : public Observer<Camera>, public Observer<Light> {
+class ShaderProgram : public Observer<Camera>{
 	public:
 		ShaderProgram(const std::string& vertexSource,const std::string& fragmentSource);
 		~ShaderProgram();
@@ -38,11 +38,8 @@ class ShaderProgram : public Observer<Camera>, public Observer<Light> {
 
 		void setTime(float time);
 		void setCamera(Camera* camera);
-		void setLight(Light* light);
 		
-
 		void update(const Camera& camera) override; 
-		void update(const Light& light) override;
 
 	private:
 		Shader vertexShader;
@@ -54,6 +51,3 @@ class ShaderProgram : public Observer<Camera>, public Observer<Light> {
 		GLuint id{0};
 	
 };
-
-
-

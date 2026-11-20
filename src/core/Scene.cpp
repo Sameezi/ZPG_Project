@@ -13,8 +13,14 @@ Scene::Scene() = default;
 Scene::~Scene() = default;
 
 void Scene::init() {
-    m_defaultShader = std::make_unique<ShaderProgram>("shaders/texture.vert", "shaders/texture.frag");
+    m_defaultShader = std::make_unique<ShaderProgram>("shaders/lighting_texture.vert", "shaders/phong_texture_multi.frag");
     m_defaultShader->setCamera(getCamera());
+
+    glGenBuffers(1, &lightsUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, lightsUBO);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(LightsBlock), nullptr, GL_DYNAMIC_DRAW);  
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, lightsUBO);                              
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void Scene::update(float deltat) {
@@ -24,7 +30,7 @@ void Scene::update(float deltat) {
 }
 
 DrawableObject& Scene::addObject(const std::string& name, Model& model,ShaderProgram& shader){
-    unsigned int id = getUniqID();
+    int id = getUniqID();
     if(id < 0){
         throw std::runtime_error("Couldn't add new object, limit of unique ids reached!");
     }
@@ -53,12 +59,12 @@ DrawableObject& Scene::addObject(Model& model,ShaderProgram& shader){
     return *it->second;
 }
 
-Light& Scene::addLightObject(const std::string& name, Model& model, ShaderProgram& shader, glm::vec3 color, float intensity){
+LightObject& Scene::addLightObject(const std::string& name, Model& model, ShaderProgram& shader, std::shared_ptr<Light> light ){
     unsigned int id = getUniqID();
     if(id < 0){
         throw std::runtime_error("Couldn't add new object, limit of unique ids reached!");
     }
-    auto obj = std::make_unique<Light>(model,shader,color,intensity,id);
+    auto obj = std::make_unique<LightObject>(model,shader,id,std::move(light));
     // save into id map
     DrawableObject* raw = obj.get();
     m_objectsById[raw->getId()] = raw;
@@ -66,6 +72,7 @@ Light& Scene::addLightObject(const std::string& name, Model& model, ShaderProgra
     auto [it, inserted] = m_lightObjects.try_emplace(name, std::move(obj));
     return *it->second;
 }
+
 
 void Scene::draw() {
     glEnable(GL_STENCIL_TEST);
@@ -75,17 +82,22 @@ void Scene::draw() {
 
     if(m_skybox) m_skybox->draw();
 
+    LightsBlock block{};
+    for(auto& [name,obj] : m_lightObjects){
+        obj->pack(block); 
+        glBindBuffer(GL_UNIFORM_BUFFER, lightsUBO);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(LightsBlock), &block);
+        glStencilFunc(GL_ALWAYS, obj->getId(), 0xFF);
+        obj->draw(*m_defaultShader);
+    }
+
     for (auto& [name, obj] : m_objects) {
         glStencilFunc(GL_ALWAYS, obj->getId(), 0xFF);
         obj->draw(*m_defaultShader);   // obj is unique_ptr
     }
 
-    for(auto& [name,obj] : m_lightObjects){
-        glStencilFunc(GL_ALWAYS, obj->getId(), 0xFF);
-        obj->draw(*m_defaultShader);
-        obj->notify();
-    }
-        if(editorObject) editorObject->draw(*m_defaultShader);
+
+    if(editorObject) editorObject->draw(*m_defaultShader);
    
 }
 
@@ -120,12 +132,13 @@ bool Scene::removeObject(GLuint id){ // Only user objects can be deleted!
     return true;
 }
 
-Light& Scene::getLightObject(const std::string& name){
+LightObject& Scene::getLightObject(const std::string& name){
     return *m_lightObjects.at(name);
 }
 
-Skybox& Scene::addSkybox(std::shared_ptr<Skybox> sky){
-    m_skybox = std::move(sky);
+Skybox& Scene::addSkybox(const std::string& modelPath,Cubemap& model, ShaderProgram& shader){
+    m_skybox = std::make_shared<Skybox>(modelPath, model, shader);
+    shader.setCamera(getCamera());
     return *m_skybox;
 }
 

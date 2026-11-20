@@ -32,9 +32,9 @@
 #include "core/Camera.h"
 #include "graphics/Model.h"
 #include "graphics/InstancedModel.h"
-#include "graphics/Light.h"
 #include "graphics/Cubemap.h"
 #include "graphics/Skybox.h"
+#include "Logger.hpp"
 
 Application::Application() :  window(1366,768,"ZPG") {}
 
@@ -44,6 +44,8 @@ Application::~Application(){
 }
 
 int Application::init(){
+	Logger::Init();
+
 	GLFWwindow* win = window.get();
 	glfwSetWindowUserPointer(win,this);
 	glfwSetMouseButtonCallback(win, Application::mouseButtonCallback);
@@ -58,14 +60,14 @@ int Application::init(){
 	// Get version info
 	int a;
 	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &a);
-	printf("Texture units: %d\n", a);
-	printf("OpenGL Version: %s\n", glGetString(GL_VERSION));
-	printf("Vendor %s\n", glGetString(GL_VENDOR));
-	printf("Renderer %s\n", glGetString(GL_RENDERER));
-	printf("GLSL %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+	Logger::Debug("Texture units: " , a);
+	Logger::Info("OpenGL Version: ", glGetString(GL_VERSION));
+	Logger::Info("Vendor " , glGetString(GL_VENDOR));
+	Logger::Info("Renderer " , glGetString(GL_RENDERER));
+	Logger::Debug("GLSL " , glGetString(GL_SHADING_LANGUAGE_VERSION));
 	int major, minor, revision;
 	glfwGetVersion(&major, &minor, &revision);
-	printf("Using GLFW %i.%i.%i\n", major, minor, revision);
+	Logger::Info("Using GLFW " , major , ". " , minor , ". " , revision);
 	return 0;
 }
 
@@ -338,24 +340,19 @@ void Application::addScenes(){
 	 auto& diffuse = shaderManager.load("diffuse","shaders/lighting_6float.vert","shaders/diffuse.frag");
 	 auto& diffuseTex = shaderManager.load("diffuseTex","shaders/lighting_texture.vert","shaders/diffuse_texture.frag");
      auto& textureShader = shaderManager.load("texture","shaders/texture.vert","shaders/texture.frag");
+	 auto& lightsShader = shaderManager.load("lights", "shaders/lighting_texture.vert","shaders/phong_texture_ubo.frag");
+	 auto& lightsShaderUntex = shaderManager.load("lights", "shaders/lighting_9float.vert","shaders/phong_ubo.frag");
 	 auto& treecolor = shaderManager.load("treecolor","shaders/treeColored.vert","shaders/treeColored.frag");
 	 auto& skyShader = resources.shaders.load("skybox", "shaders/skybox.vert", "shaders/skybox.frag");
 	 
 	 std::string folderPath = "../textures/cubemaps/clouds/";
-		std::vector<std::string> faces = {
-			folderPath + "posx.png", 
-			folderPath + "negx.png", 
-			folderPath + "posy.png",
-			folderPath + "negy.png",
-			folderPath + "posz.png",
-			folderPath + "negz.png"
-		};
+	 std::vector<std::string> faces = { folderPath + "posx.png", folderPath + "negx.png", folderPath + "posy.png",folderPath + "negy.png",folderPath + "posz.png",folderPath + "negz.png"};
 	 auto& skyTex = resources.cubemaps.load("sky", faces);
 
 	 auto& modelManager = resources.models;
 	 auto& shrek = modelManager.load("shrek","../models/shrek.obj","../textures/shrek.png");
 	 auto& fiona = modelManager.load("fiona","../models/fiona.obj","../textures/fiona.png");
-	 auto& ground = modelManager.load("ground",groundVertices,"../textures/grass.jpg");
+	 auto& ground = modelManager.load("ground","../models/teren.obj","../textures/grass.jpg");
 	 auto& presentation = modelManager.load("presentation",groundVertices,"../textures/presentation1.png");
 	 auto& eb408 = modelManager.load("eb408","../models/EB408.obj","../textures/T_EB408.png");
 	 auto& chair = modelManager.load("chair","../models/OrangeChair.obj","../textures/T_OrangeChair_BaseColor.png");
@@ -398,18 +395,16 @@ void Application::addScenes(){
 	};	
 
 	// Creating the space scene
+	{ 
+    m_scenes[0]->addObject("moon",moon,lightsShaderUntex);
+	m_scenes[0]->addObject("earth",earth,lightsShaderUntex);
+	m_scenes[0]->addObject("login",login,lightsShaderUntex);
+	m_scenes[0]->addObject("rocket",rocket,lightsShaderUntex);
+	m_scenes[0]->addLightObject("sun",sun,ambient, std::make_shared<DirLight>(glm::vec3(-0.2f, -1.0f, -0.3f), glm::vec3( 0.05f, 0.05f, 0.05f), glm::vec3(0.4f), glm::vec3(0.5f)));
 
-	 m_scenes[0]->addLightObject("sun",sun,ambient);
-	 m_scenes[0]->addObject("moon",moon,phong);
-	 m_scenes[0]->addObject("earth",earth,phong);
-	 m_scenes[0]->addObject("login",login,blinPhong_2);
-	 m_scenes[0]->addObject("rocket",rocket,phong);
+	lightsShaderUntex.setCamera(m_scenes[0]->getCamera()); 
+	ambient.setCamera(m_scenes[0]->getCamera()); 
 
-	 phong.setLight(&m_scenes[0]->getLightObject("sun")); 
-	 ambient.setLight(&m_scenes[0]->getLightObject("sun")); 
-	 blinPhong_2.setLight(&m_scenes[0]->getLightObject("sun")); 
-
-	{ // TRANSFORMS 
 	//sun 
 	auto sun = std::make_shared<TransformComposite>();
 	sun->addNode(std::make_shared<Rotation>(glm::radians(70.f), glm::vec3(0.f, -1.f, 0.f), 0.3f));
@@ -435,7 +430,13 @@ void Application::addScenes(){
 	moon->addNode(std::make_shared<Translation>(glm::vec3(0.2f, 0.f, 0.f)));              
 	moon->addNode(std::make_shared<Scaling>(.01f));
 	m_scenes[0]->getObject("moon").setTransform(moon);
-		
+
+	auto login = std::make_shared<TransformComposite>();
+	login->addNode(std::make_shared<Translation>(glm::vec3(1.0f, 1.0f, 1.0f)));              
+	login->addNode(std::make_shared<Rotation>(0.f, glm::vec3(0.f, 1.f, 0.f), 2.f));        
+	login->addNode(std::make_shared<Scaling>(.25f));
+	m_scenes[0]->getObject("login").setTransform(login);
+
 	// earth orbit around sun
 	auto shipOrbit = std::make_shared<TransformComposite>();
 	shipOrbit->addNode(std::make_shared<Rotation>(0.f, glm::vec3(0.f, -1.f, 0.f), 0.5f));
@@ -446,24 +447,21 @@ void Application::addScenes(){
 	rocket->addNode(std::make_shared<Rotation>(0.f, glm::vec3(0.f, 0.f, 1.f),1.0f));        
 	rocket->addNode(std::make_shared<Scaling>(.00009f));
 	m_scenes[0]->getObject("rocket").setTransform(rocket);
+
 	}
 
-	m_scenes[0]->getObject("login").setTransform(createTransform(glm::vec3(1.0f,1.0f,1.0f), glm::vec3(0.25f), 0.0f, glm::vec3(0.0f,1.0f,0.0f), 2.0f));
-
-
 	// Setting up forest scene
-	m_scenes[1]->addLightObject("firefly",sphere,ambient);
-	m_scenes[1]->addObject("ground",ground,textureShader);
+	m_scenes[1]->addObject("ground",ground,lightsShader);
 	m_scenes[1]->addObject("trees",trees,treecolor);
-	m_scenes[1]->addObject("shrek",shrek,textureShader);
-	m_scenes[1]->addObject("fiona",fiona,textureShader); 
-	m_scenes[1]->addSkybox(std::make_shared<Skybox>("../models/skybox.obj",skyTex, skyShader));
-	skyShader.setCamera(m_scenes[1]->getCamera());
+	m_scenes[1]->addObject("shrek",shrek,lightsShader);
+	m_scenes[1]->addObject("fiona",fiona,lightsShader); 
+	m_scenes[1]->addSkybox("../models/skybox.obj",skyTex, skyShader);
+	m_scenes[1]->addLightObject("sun",sphere,diffuse, std::make_shared<DirLight>(glm::vec3(-0.2f, -1.0f, -0.3f), glm::vec3( 0.05f, 0.05f, 0.05f), glm::vec3(0.4f), glm::vec3(0.5f)));
+	m_scenes[1]->getLightObject("sun").setTransform(std::make_shared<Scaling>(0.0f));
 	
-	m_scenes[1]->getLightObject("firefly").setTransform(createTransform(glm::vec3(0.0f,25.5f,0.0f),glm::vec3(0.2f)));
-	m_scenes[1]->getObject("ground").setTransform(createTransform(glm::vec3(25.0f,-100.0f,25.0f), glm::vec3(100.0f), -90.0f, glm::vec3(1,0,0)));
 	m_scenes[1]->getObject("shrek").setTransform(createTransform(glm::vec3(0.0f,0.0f,0.0f),glm::vec3(-1,1,1)));
 	m_scenes[1]->getObject("fiona").setTransform(createTransform(glm::vec3(3.0f,0.0f,0.0f),glm::vec3(-1,1,1)));
+
 	{
 	 std::vector<std::shared_ptr<TransformComposite>> composites;
 	 for(int i = 0; i <= 73; i++){
@@ -477,15 +475,17 @@ void Application::addScenes(){
 	 trees.setInstances(composites);
 	 m_scenes[1]->getObject("trees");
 	 }
-	
+
+
 	// Setting classroom scene
 	m_scenes[2]->addObject("presentation", presentation,textureShader);
-	m_scenes[2]->addObject("classroom",eb408,diffuseTex);
-	m_scenes[2]->addObject("door",door,diffuseTex);
+	m_scenes[2]->addObject("classroom",eb408,lightsShader);
+	m_scenes[2]->addObject("door",door,lightsShader);
 	m_scenes[2]->addObject("whiteboard",whiteboard,phongTex);
-	m_scenes[2]->addLightObject("light",sphere,diffuse,glm::vec3(1.0f,1.0f,1.0f),1.0f);
 	m_scenes[2]->addObject("login",login,diffuse);
-	
+	m_scenes[2]->addLightObject("light1", sphere, diffuse, std::make_shared<PointLight>(glm::vec3(-0.0761889, 2.08195, 3.62653), glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.5f, 0.5f, 0.5f), glm::vec3(1.0f, 1.0f, 1.0f),
+	1.0f, 0.09f, 0.032f));
+
 	
 	std::vector<glm::vec3> chairPositions = {{-0.74,0,1.17},{-0.74,0,2.17},{-0.74,0,3.17},{-0.74,0,4.17},{-0.74,0,5.17},{-0.74,0,5.9},
 	 										 {0.82,0,1.17},{0.82,0,2.17},{0.82,0,3.17},{0.82,0,4.17},{0.82,0,5.17},{0.82,0,5.9},
@@ -499,30 +499,27 @@ void Application::addScenes(){
 
 	for(int i = 0; i < 19; i++){
 		std::string name = "chair" + std::to_string(i);
-		m_scenes[2]->addObject(name,chair,diffuseTex);
+		m_scenes[2]->addObject(name,chair,lightsShader);
 		m_scenes[2]->getObject(name).setTransform(createTransform(chairPositions.at(i),glm::vec3(1.0f), i == 18 ? 90.0f : -90.0f));
 	}
 	for(int i = 0; i < 10; i++){
 		std::string name = "table" + std::to_string(i);
-		m_scenes[2]->addObject(name,table,diffuseTex);
+		m_scenes[2]->addObject(name,table,lightsShader);
 		m_scenes[2]->getObject(name).setTransform(createTransform(tablePositions.at(i), glm::vec3(1.0f), 90.0f));
 	}
 	for(int i = 0; i < 19; i++){
 		std::string name = "computer" + std::to_string(i);
-		m_scenes[2]->addObject(name,computer,diffuseTex);
+		m_scenes[2]->addObject(name,computer,lightsShader);
 		m_scenes[2]->getObject(name).setTransform(createTransform(computerPositions.at(i), glm::vec3(0.001f), i == 18 ? -90.0f : 90.0f));
 	}	
 
 	m_scenes[2]->getObject("whiteboard").setTransform(createTransform(glm::vec3(-3.8f,0.0f,4.0f)));
 	m_scenes[2]->getObject("presentation").setTransform(createTransform(glm::vec3(-2.78f,0.985f,5.14f), glm::vec3(4.470f, 2.51f, 1.0f), -90.0f));
 	m_scenes[2]->getObject("door").setTransform(createTransform(glm::vec3(-2.39f,0.0f,7.7f)));
-	m_scenes[2]->getLightObject("light").setTransform(createTransform(glm::vec3(0.5f,3.08f,3.5f),glm::vec3(0.05f)));
 	m_scenes[2]->getObject("login").setTransform(createTransform(glm::vec3(0.5f,2.5f,3.5f), glm::vec3(0.5f)));
-	m_scenes[2]->addSkybox(std::make_shared<Skybox>("../models/skybox.obj",skyTex, skyShader));
-	skyShader.setCamera(m_scenes[2]->getCamera());
-	diffuseTex.setLight(&m_scenes[2]->getLightObject("light"));
-	phongTex.setLight(&m_scenes[2]->getLightObject("light"));
-	diffuse.setLight(&m_scenes[2]->getLightObject("light"));
+	m_scenes[2]->getLightObject("light1").setTransform(createTransform(glm::vec3(-0.0761889, 2.08195, 3.62653), glm::vec3(0.1)));
+	m_scenes[2]->addSkybox("../models/skybox.obj",skyTex, skyShader);
+
 
 	main_scene = m_scenes[2];
 }
