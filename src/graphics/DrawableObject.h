@@ -8,12 +8,14 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <optional>
 
 #include "Model.h"
 #include "InstancedModel.h"
 #include "ShaderProgram.h"
 #include "transformation/Transform.h"
 #include "core/parametricAxis.h"
+#include "graphics/Material.h"
 
 class ShaderProgram;
 class DrawableObject{
@@ -28,8 +30,10 @@ class DrawableObject{
         void setTransform(std::shared_ptr<Transform> t);
         void setTime(float time);
         void setAcc(glm::vec3 offset);
+        void setMaterial(Material material);
         void setParametricAxis(glm::vec3 pos);
 
+        float getParametricProgress();
         glm::vec3 getPos() const;
         void setPos(glm::vec3 pos);
         unsigned int getId() const;
@@ -38,9 +42,10 @@ class DrawableObject{
        Model* m_model; 
        unsigned int m_id;
        glm::vec3 acceleration{0.0f};
-       glm::vec3 position{0.0f};
+       glm::vec3 positionOffset{0.0f};
        parametricAxis m_axis;
        bool m_hasAxis{false};
+       std::optional<Material> m_material;
     protected:
        ShaderProgram* m_shader;
        std::shared_ptr<Transform> m_transform;

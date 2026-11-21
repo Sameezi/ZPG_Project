@@ -26,14 +26,14 @@ void DrawableObject::update(float deltat) {
 		glm::vec3 dirVec = m_axis.B - m_axis.A;
 		setPos(m_axis.A + m_axis.t*(dirVec));
     }else{
-        position += acceleration * deltat;
+        positionOffset += acceleration * deltat;
     }
 }
 
 void DrawableObject::setTransform(std::shared_ptr<Transform> t) {
     m_transform = std::move(t);
-    position = getPos();
-    m_axis.A = position;
+    positionOffset = glm::vec3(0.0f);
+    m_axis.A = getPos();
 }
 
 void DrawableObject::setParametricAxis(glm::vec3 pos){
@@ -52,6 +52,10 @@ void DrawableObject::setParametricAxis(glm::vec3 pos){
 	}
 }
 
+float DrawableObject::getParametricProgress(){
+    return m_axis.t;
+}
+
 void DrawableObject::setTime(float time) {
     if (!m_shader) return;   
     m_shader->use();
@@ -63,8 +67,11 @@ void DrawableObject::draw(ShaderProgram& fallbackShader) {
     shader.use();
 
     glm::mat4 matrice = m_transform ? m_transform->getMatrix() : glm::mat4(1.f);
-    matrice[3] = glm::vec4(position, 1.f);
+    matrice[3] += glm::vec4(positionOffset, 0.f);
 
+    if(m_material){
+        shader.setMaterial(*m_material);
+    }
 
     if (!dynamic_cast<InstancedModel*>(m_model))
         shader.setMat4("modelMatrix", matrice);
@@ -77,11 +84,12 @@ void DrawableObject::draw(ShaderProgram& fallbackShader) {
 
 glm::vec3 DrawableObject::getPos() const {
     glm::mat4 m = m_transform ? m_transform->getMatrix() : glm::mat4(1.f);
-    return glm::vec3(m[3]);
+    return glm::vec3(m[3]) + positionOffset;
 }
 
 void DrawableObject::setPos(glm::vec3 pos){
-    position = pos;
+    glm::mat4 transform = m_transform ? m_transform->getMatrix() : glm::mat4(1.f);
+    positionOffset = pos - glm::vec3(transform[3]);
 }
 
 void DrawableObject::setAcc(glm::vec3 offset) {
@@ -90,4 +98,8 @@ void DrawableObject::setAcc(glm::vec3 offset) {
 
 unsigned int DrawableObject::getId() const{
     return m_id;
+}
+
+void DrawableObject::setMaterial(Material material){
+    m_material = std::move(material);
 }

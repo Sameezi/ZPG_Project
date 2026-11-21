@@ -85,27 +85,19 @@ struct SpotLight{
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir){
     vec3 lightDir = normalize(light.position - fragPos);
     float theta = dot(lightDir, normalize(-light.direction));
+    float coneRange = max(light.cutOff - light.outerCutOff, 0.0001);
+    float intensity = clamp((theta - light.outerCutOff) / coneRange, 0.0, 1.0);
+    float diff = max(dot(normal,lightDir),0.0);
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(reflectDir,viewDir),0.0),32);
+    float distance = length(light.position - fragPos);
+    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+
     vec3 ambient = light.ambient * vertexColor;
+    vec3 diffuse = light.diffuse * diff * vertexColor;
+    vec3 specular = light.specular * spec * vertexColor;
 
-    if(theta > light.cutOff){
-        float diff = max(dot(normal,lightDir),0.0);
-        vec3 reflectDir = reflect(-lightDir, normal);
-
-        float spec = pow(max(dot(reflectDir,viewDir),0.0),32);
-        float distance = length(light.position - fragPos);
-        float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
-        
-        vec3 diffuse = light.diffuse * diff * vertexColor;
-        vec3 specular = light.specular * spec * vertexColor;
-
-        ambient *= attenuation;
-        diffuse *= attenuation;
-        specular *= attenuation;
-
-        return (ambient + diffuse + specular);
-    }else{
-       return (light.ambient);
-    }
+    return (ambient + intensity * (diffuse + specular)) * attenuation;
 }
 
 // Uniform Buffer Object

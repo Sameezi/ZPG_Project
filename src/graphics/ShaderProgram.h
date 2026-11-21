@@ -7,6 +7,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "Shader.h"
 #include "core/Observer.h"
+#include "Material.h"
 
 
 
@@ -23,8 +24,8 @@ class ShaderProgram : public Observer<Camera>{
 		void setMat4(const std::string& name, const glm::mat4& mat) const;
 		void setVec3(const std::string& name, const glm::vec3& vec) const;
 		void setVec4(const std::string& name, const glm::vec4& vec) const;
-		void setInt(const std::string& name, int value);
-		void setFloat(const std::string& name, float value);
+		void setInt(const std::string& name, int value) const;
+		void setFloat(const std::string& name, float value) const;
 
 		void setTranslation(const glm::vec3& t) const;
 		void setTranslation(float x, float y, float z) const;
@@ -37,6 +38,7 @@ class ShaderProgram : public Observer<Camera>{
 		void setRotation(const glm::vec3& eulerRadians) const;   
 
 		void setTime(float time);
+		void setMaterial(const Material& material);
 		void setCamera(Camera* camera);
 		
 		void update(const Camera& camera) override; 
@@ -45,9 +47,9 @@ class ShaderProgram : public Observer<Camera>{
 		Shader vertexShader;
 		Shader fragmentShader;
 		GLint viewUfExist{0};
-		GLint lightUfExist{0};
 		GLint texUfExist{0};
 		GLint modelUfExist{0};
+		GLint materialUfExist{0};
 		GLuint id{0};
 	
 };

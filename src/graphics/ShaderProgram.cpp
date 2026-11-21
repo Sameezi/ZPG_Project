@@ -37,10 +37,6 @@ ShaderProgram::ShaderProgram(const std::string& vertexSource,const std::string& 
 		if(location != -1){
 			viewUfExist = 1;
 		}
-	location = glGetUniformLocation(id,"lightPos");
-		if(location != -1){
-			lightUfExist = 1;
-		}
 	location = glGetUniformLocation(id, "textureUnitID");
 		if(location != -1){
 			texUfExist = 1;
@@ -53,6 +49,10 @@ ShaderProgram::ShaderProgram(const std::string& vertexSource,const std::string& 
 		if(location != -1){
 			modelUfExist = 1;
 		}
+	location = glGetUniformLocation(id, "material.ambient");
+		if(location != -1){
+			materialUfExist = 1;
+	}
 }
 
 ShaderProgram::~ShaderProgram(){
@@ -62,11 +62,17 @@ ShaderProgram::~ShaderProgram(){
 }
 
 void ShaderProgram::use() const{
-    if(texUfExist){
-	GLint location = glGetUniformLocation(id,"textureUnitID");
-	glUniform1i(location, 0);
-	}
 	glUseProgram(id);
+    if(texUfExist){
+		GLint location = glGetUniformLocation(id,"textureUnitID");
+		glUniform1i(location, 0);
+	}
+	if(materialUfExist){
+		this->setVec3("material.ambient", glm::vec3(1.0));
+		this->setVec3("material.diffuse", glm::vec3(1.0));
+		this->setVec3("material.specular", glm::vec3(1.0f));
+		this->setFloat("material.shininess", 32.0f);
+	}
 }
 
 void ShaderProgram::setMat4(const std::string& name, const glm::mat4& mat) const {
@@ -96,7 +102,7 @@ void ShaderProgram::setVec4(const std::string& name, const glm::vec4& v) const {
     glUniform3fv(glGetUniformLocation(id, name.c_str()), 1, glm::value_ptr(v));
 }
 
-void ShaderProgram::setInt(const std::string& name, int value) {
+void ShaderProgram::setInt(const std::string& name, int value) const {
     GLint location = glGetUniformLocation(id, name.c_str());
     if (location == -1) {
         std::cerr << "Couldn't find uniform: " << name
@@ -106,7 +112,7 @@ void ShaderProgram::setInt(const std::string& name, int value) {
     glUniform1i(location, value);
 }
 
-void ShaderProgram::setFloat(const std::string& name, float value) {
+void ShaderProgram::setFloat(const std::string& name, float value) const {
     GLint location = glGetUniformLocation(id, name.c_str());
     if (location == -1) {
         std::cerr << "Couldn't find uniform: " << name
@@ -151,6 +157,20 @@ void ShaderProgram::setTime(float time){
 		exit(EXIT_FAILURE);
 	}
 	glUniform1f(location, time);
+}
+
+
+void ShaderProgram::setMaterial(const Material& material){
+	GLint location = glGetUniformLocation(id, "material.ambient");
+	if(location == -1){
+		std::cerr << "Unhandled error! Couldn't find uniform value:"  << "material" << " in shader: " << this->id<< std::endl;
+		exit(EXIT_FAILURE);
+	}
+	setVec3("material.ambient", material.ambient);
+	setVec3("material.diffuse", material.diffuse);
+	setVec3("material.specular", material.specular);
+	setFloat("material.shininess", material.shininess);
+
 }
 
 void ShaderProgram::setCamera(Camera* camera){

@@ -74,8 +74,11 @@ void Camera::update(float deltaTime){
     glm::vec3 front = getFront();
     glm::vec3 right = glm::normalize(glm::cross(front, up));
 
-    position += right * movement.y * deltaTime; 
+    front.y = 0.0;
     position += front * movement.x * deltaTime;
+    position += right * movement.y * deltaTime; 
+    position.y = 1.3;
+    
     updateView();
 }
 

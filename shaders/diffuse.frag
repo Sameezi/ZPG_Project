@@ -29,7 +29,7 @@ void main()
     float att = attenuation(dist, 1.0, 0.09, 0.032);
 
     vec3 ambient = 0.1 * vertexColor;     
-    vec3 color = ambient + att * diff * vertexColor * radiance;
-
+    vec3 color = ambient + att * diff * vertexColor * radiance; 
+    
     fragColor = vec4(color, 1.0);
 }

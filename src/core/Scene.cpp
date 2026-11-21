@@ -27,6 +27,9 @@ void Scene::update(float deltat) {
     for (auto& [name, obj] : m_objects) {
         obj->update(deltat);
     }
+    for (auto& [name, obj] : m_lightObjects) {
+        obj->update(deltat);
+    }
 }
 
 DrawableObject& Scene::addObject(const std::string& name, Model& model,ShaderProgram& shader){
@@ -56,6 +59,7 @@ DrawableObject& Scene::addObject(Model& model,ShaderProgram& shader){
 
     const std::string& name = "obj-" + std::to_string(id);
     auto [it, inserted] = m_objects.try_emplace(name, std::move(obj));
+    shader.setCamera(getCamera());
     return *it->second;
 }
 
@@ -70,6 +74,7 @@ LightObject& Scene::addLightObject(const std::string& name, Model& model, Shader
     m_objectsById[raw->getId()] = raw;
 
     auto [it, inserted] = m_lightObjects.try_emplace(name, std::move(obj));
+    shader.setCamera(getCamera());
     return *it->second;
 }
 
@@ -83,10 +88,16 @@ void Scene::draw() {
     if(m_skybox) m_skybox->draw();
 
     LightsBlock block{};
-    for(auto& [name,obj] : m_lightObjects){
-        obj->pack(block); 
-        glBindBuffer(GL_UNIFORM_BUFFER, lightsUBO);
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(LightsBlock), &block);
+    for (auto& [name, obj] : m_lightObjects) {
+        obj->pack(block, *getCamera());
+    }
+
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, lightsUBO);
+    glBindBuffer(GL_UNIFORM_BUFFER, lightsUBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(LightsBlock), &block);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    for (auto& [name, obj] : m_lightObjects) {
         glStencilFunc(GL_ALWAYS, obj->getId(), 0xFF);
         obj->draw(*m_defaultShader);
     }
@@ -95,7 +106,6 @@ void Scene::draw() {
         glStencilFunc(GL_ALWAYS, obj->getId(), 0xFF);
         obj->draw(*m_defaultShader);   // obj is unique_ptr
     }
-
 
     if(editorObject) editorObject->draw(*m_defaultShader);
    

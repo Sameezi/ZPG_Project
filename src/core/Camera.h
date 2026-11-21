@@ -39,6 +39,6 @@ class Camera{
         float farPlane{100.0f};
 
         glm::vec2 movement{0.0f,0.0f};
-        glm::vec3 position{0.0f, 0.0f, 4.0f};
+        glm::vec3 position{0.0f, 2.0f, 4.0f};
 
 };

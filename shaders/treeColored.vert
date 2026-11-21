@@ -15,8 +15,8 @@ out vec3 normal;
 void main()
 {
     normal = color;
-    if(gl_VertexID>36443) vertexColor = vec3(0.f,1.f,0.f);
-    else vertexColor = vec3(1.f,0.3f,0.f);
+    if(gl_VertexID>36443) vertexColor = vec3(0.f,0.2f,0.f);
+    else vertexColor = vec3(0.1f,0.1f,0.f);
     vec4 world = instanceMatrix * vec4(position, 1.0);
     worldPos = world.xyz;
     mat3 normalMatrix = transpose(inverse(mat3(instanceMatrix)));

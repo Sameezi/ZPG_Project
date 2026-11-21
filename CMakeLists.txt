@@ -26,6 +26,7 @@ src/graphics/lights/LightObject.cpp
 src/graphics/lights/PointLight.cpp
 src/graphics/lights/SpotLight.cpp
 src/graphics/lights/DirLight.cpp
+src/graphics/Material.cpp
 src/transformation/Rotation.cpp
 src/transformation/Scaling.cpp
 src/transformation/Translation.cpp
