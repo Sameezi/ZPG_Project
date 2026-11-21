@@ -68,6 +68,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir){
 // Spot light
 struct SpotLight{
     vec3 position;
+    int enabled;
     vec3 direction;
 
     float constant; 
@@ -83,6 +84,8 @@ struct SpotLight{
 };
 
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir){
+    if(light.enabled == 0) return vec3(0.0);
+
     vec3 lightDir = normalize(light.position - fragPos);
     float theta = dot(lightDir, normalize(-light.direction));
     float coneRange = max(light.cutOff - light.outerCutOff, 0.0001);

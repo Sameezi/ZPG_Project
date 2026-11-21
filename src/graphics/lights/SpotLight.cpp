@@ -17,8 +17,17 @@ void SpotLight::pack(LightsBlock& b, const glm::mat4& world) const{
     if (b.numSpot >= MAX_SPOT) return;
         auto& o = b.spot[b.numSpot++];
         o.position = glm::vec3(world * glm::vec4(m_position, 1.0f));
+        o.enabled = m_enabled;
         o.direction = glm::normalize(glm::mat3(world) * m_direction);
         o.constant = m_constant; o.linear = m_linear; o.quadratic = m_quadratic;
         o.ambient = m_ambient; o.diffuse = m_diffuse; o.specular = m_specular;
         o.cutOff = m_cutOff; o.outerCutOff = m_outerCutOff;
+}
+
+void SpotLight::enable(){
+    if(m_enabled == 0){
+        m_enabled = 1;
+    }else{
+        m_enabled = 0;
+    }
 }

@@ -288,6 +288,10 @@ void Application::processInput(){
 	}
 	if(glfwGetKey(win,GLFW_KEY_TAB) == GLFW_RELEASE)
 		k_pressed = false;
+
+	if(glfwGetKey(win,GLFW_KEY_F) == GLFW_PRESS){
+		m_scenes[1]->getLightObject("flashlight").enable();
+	}
 }
 
 float Application::randomFloat(float lo, float hi) {
@@ -339,7 +343,7 @@ void Application::addScenes(){
 	 auto& blinPhong = shaderManager.load("blinphong", "shaders/lighting_9float.vert", "shaders/blinn_phong.frag");
 	 auto& blinPhong_2 = shaderManager.load("blinphong_2", "shaders/lighting_6float.vert", "shaders/blinn_phong.frag");
 	 auto& diffuse = shaderManager.load("diffuse","shaders/lighting_6float.vert","shaders/diffuse.frag");
-	 auto& diffuseColor = shaderManager.load("diffuseColor","shaders/lighting_6float.vert","shaders/diffuse.frag");
+	 auto& ambient6 = shaderManager.load("ambient6","shaders/lighting_6float.vert","shaders/ambient.frag");
 	 auto& diffuseTex = shaderManager.load("diffuseTex","shaders/lighting_texture.vert","shaders/diffuse_texture.frag");
      auto& textureShader = shaderManager.load("texture","shaders/texture.vert","shaders/texture.frag");
 	 auto& lightsShader = shaderManager.load("lights", "shaders/lighting_texture.vert","shaders/phong_texture_ubo.frag");
@@ -366,7 +370,7 @@ void Application::addScenes(){
 	 auto& sphere = modelManager.load("sphere",sphereVertices);
 	 auto& trees = resources.imodels.load("trees",treeVertices);
 
-	 std::string folderPath = "../textures/cubemaps/clouds/";
+	 std::string folderPath = "../textures/cubemaps/clouds_dark/";
 	 std::vector<std::string> faces = { folderPath + "posx.png", folderPath + "negx.png", folderPath + "posy.png",folderPath + "negy.png",folderPath + "posz.png",folderPath + "negz.png"};
 	 auto& skyTex = resources.cubemaps.load("sky", faces);
 
@@ -458,24 +462,16 @@ void Application::addScenes(){
 	m_scenes[1]->addObject("shrek",shrek,lightsShader);
 	m_scenes[1]->addObject("fiona",fiona,lightsShader); 
 	m_scenes[1]->addSkybox("../models/skybox.obj",skyTex, skyShader);
-	m_scenes[1]->addLightObject("firefly1", sphere, diffuse, std::make_shared<PointLight>(glm::vec3(0.0f), glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.1f, 0.1f, 0.1f), glm::vec3(0.1f, 0.1f, 0.1f),
-	1.0f, 0.09f, 0.032f));
 	m_scenes[1]->addLightObject("moon", sphere, diffuse, std::make_shared<DirLight>(glm::vec3(-0.2, -1.0f, -0.3f), glm::vec3(0.03f, 0.05f, 0.12f), glm::vec3(0.015, 0.020f, 0.040f), glm::vec3(0.015f, 0.020f, 0.035f)));
 	m_scenes[1]->addLightObject("flashlight", sphere, diffuse, std::make_shared<SpotLight>(glm::vec3(0.0f), glm::vec3(0.0f),glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1, 1, 1), glm::vec3(1, 1, 1),
 	1.0f, 0.09f, 0.032f, glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(15.0f))));
 
-	m_scenes[1]->getLightObject("moon").setTransform(std::make_shared<Scaling>(0.f));
-	m_scenes[1]->getLightObject("firefly1").setTransform(createTransform(glm::vec3(10.0f,1.0f,1.0f),glm::vec3(0.02f)));
-	m_scenes[1]->getLightObject("flashlight").setTransform(std::make_shared<Scaling>(0.0f));
-	m_scenes[1]->getObject("shrek").setTransform(createTransform(glm::vec3(0.0f,0.0f,0.0f),glm::vec3(-1,1,1)));
-	m_scenes[1]->getObject("fiona").setTransform(createTransform(glm::vec3(3.0f,0.0f,0.0f),glm::vec3(-1,1,1)));
-
 	{ // instanced trees
 	 std::vector<std::shared_ptr<TransformComposite>> composites;
 	 for(int i = 0; i <= 73; i++){
-	 float randomScale = randomFloat(0.1f, 0.50f); 
-	 float randomZ = randomFloat(-25.0f, 25.0f);
-	 float randomX = randomFloat(-25.0f, 25.0f);
+	 float randomScale = randomFloat(0.6f, 1.00f); 
+	 float randomZ = randomFloat(-35.0f, 35.0f);
+	 float randomX = randomFloat(-35.0f, 35.0f);
 	 float randomRot = randomFloat(-90.0f,90.0f);
 	
 	 composites.push_back(createTransform(glm::vec3(randomX, 0.0f, randomZ), glm::vec3(randomScale), randomRot));
@@ -484,13 +480,26 @@ void Application::addScenes(){
 	 m_scenes[1]->getObject("trees");
 	 }
 
+	 for(int i = 0; i < 4; i++){ // creating fireflies
+		std::string name = "firefly" + std::to_string(i);
+		m_scenes[1]->addLightObject(name.c_str(), sphere, ambient6, std::make_shared<PointLight>(glm::vec3(0.0f), glm::vec3(0.01f, 0.05f, 0.01f), glm::vec3(0.01f, 0.01f, 0.01f), glm::vec3(0.01f, 0.01f, 0.01f),
+		1.0f, 0.09f, 0.032f));
+		m_scenes[1]->getLightObject(name).setTransform(std::make_shared<Scaling>(0.01f));
+	 	m_scenes[1]->getLightObject(name).startRoaming(glm::vec3(-25.0, 0.5, -25.0), glm::vec3(25.0, 3.0, 25.0), 1.5f);
+	 }
+
+	 m_scenes[1]->getLightObject("moon").setTransform(std::make_shared<Scaling>(0.f));
+	 m_scenes[1]->getLightObject("flashlight").setTransform(std::make_shared<Scaling>(0.0f));
+	 m_scenes[1]->getObject("shrek").setTransform(createTransform(glm::vec3(0.0f,0.0f,0.0f),glm::vec3(-1,1,1)));
+	 m_scenes[1]->getObject("fiona").setTransform(createTransform(glm::vec3(3.0f,0.0f,0.0f),glm::vec3(-1,1,1)));
+	 
+
 
 	// *************************************************** Setting classroom scene
 	m_scenes[2]->addObject("presentation", presentation,textureShader);
 	m_scenes[2]->addObject("classroom",eb408,lightsShader);
 	m_scenes[2]->addObject("door",door,lightsShader);
 	m_scenes[2]->addObject("whiteboard",whiteboard,phongTex);
-	m_scenes[2]->addObject("login",login,diffuse);
 	m_scenes[2]->addSkybox("../models/skybox.obj",skyTex, skyShader);
 	m_scenes[2]->addLightObject("light1", sphere, diffuse, std::make_shared<PointLight>(glm::vec3(0.0f), glm::vec3(0.05f, 0.05f, 0.05f), glm::vec3(0.8f, 0.8f, 0.8f), glm::vec3(1.0f, 1.0f, 1.0f),
 	1.0f, 0.09f, 0.032f));
@@ -525,7 +534,6 @@ void Application::addScenes(){
 	m_scenes[2]->getObject("whiteboard").setTransform(createTransform(glm::vec3(-3.8f,0.0f,4.0f)));
 	m_scenes[2]->getObject("presentation").setTransform(createTransform(glm::vec3(-2.78f,0.985f,5.14f), glm::vec3(4.470f, 2.51f, 1.0f), -90.0f));
 	m_scenes[2]->getObject("door").setTransform(createTransform(glm::vec3(-2.39f,0.0f,7.7f)));
-	m_scenes[2]->getObject("login").setTransform(createTransform(glm::vec3(0.5f,2.5f,3.5f), glm::vec3(0.5f)));
 	m_scenes[2]->getObject("classroom").setMaterial(Material::getMaterial("silver"));
 	m_scenes[2]->getLightObject("light1").setTransform(createTransform(glm::vec3(-0.0761889, 3.05, 3.62653), glm::vec3(0.1)));
 	

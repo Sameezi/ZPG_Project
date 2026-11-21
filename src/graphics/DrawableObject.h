@@ -32,8 +32,8 @@ class DrawableObject{
         void setAcc(glm::vec3 offset);
         void setMaterial(Material material);
         void setParametricAxis(glm::vec3 pos);
+        void startRoaming(glm::vec3 boundMin, glm::vec3 boundMax, float speed);
 
-        float getParametricProgress();
         glm::vec3 getPos() const;
         void setPos(glm::vec3 pos);
         unsigned int getId() const;

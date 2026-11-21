@@ -13,7 +13,7 @@ out vec3 vertexColor;
 
 void main()
 {
-    vertexColor = vec3 (0.385 , 0.647 , 0.812);
+    vertexColor = vec3 (0.4 , 1.0 , 0.4);
     vec4 world = modelMatrix * vec4(position, 1.0);
     worldPos = world.xyz;
     mat3 normalMatrix = transpose(inverse(mat3(modelMatrix)));

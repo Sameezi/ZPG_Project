@@ -36,7 +36,7 @@ class Camera{
         float pitch{0.0f};
         float fov{60.0f};
         float nearPlane{0.1f};
-        float farPlane{100.0f};
+        float farPlane{160.0f};
 
         glm::vec2 movement{0.0f,0.0f};
         glm::vec3 position{0.0f, 2.0f, 4.0f};

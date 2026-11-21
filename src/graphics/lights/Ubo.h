@@ -16,7 +16,7 @@ struct PointLightStd140 {                    // 80 B
 };
 
 struct SpotLightStd140 {                     // 112 B
-    alignas(16) glm::vec3 position;  float _p0;
+    alignas(16) glm::vec3 position;  int enabled;
     alignas(16) glm::vec3 direction; float constant;
     float linear; float quadratic; float _p1[2];
     alignas(16) glm::vec3 ambient;   float _p2;

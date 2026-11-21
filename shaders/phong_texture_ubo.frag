@@ -80,6 +80,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir){
 // Spot light
 struct SpotLight{
     vec3 position;
+    int enabled;
     vec3 direction;
 
     float constant; 
@@ -95,22 +96,26 @@ struct SpotLight{
 };
 
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir){
-    vec3 lightDir = normalize(light.position - fragPos);
-    float theta = dot(lightDir, normalize(-light.direction));
-    float coneRange = max(light.cutOff - light.outerCutOff, 0.0001);
-    float intensity = clamp((theta - light.outerCutOff) / coneRange, 0.0, 1.0);
-    vec3 albedo = texture(textureUnitID,uv).rgb;
-    float diff = max(dot(normal,lightDir),0.0);
-    vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(reflectDir,viewDir),0.0), material.shininess);
-    float distance = length(light.position - fragPos);
-    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
-    vec3 ambient = light.ambient * material.ambient * albedo;
-    vec3 diffuse = light.diffuse * (diff * material.diffuse) * albedo;
-    vec3 specular = light.specular * (spec * material.specular);
+    if(light.enabled == 0) return vec3(0.0);
+    
+        vec3 lightDir = normalize(light.position - fragPos);
+        float theta = dot(lightDir, normalize(-light.direction));
+        float coneRange = max(light.cutOff - light.outerCutOff, 0.0001);
+        float intensity = clamp((theta - light.outerCutOff) / coneRange, 0.0, 1.0);
 
-    return (ambient + intensity * (diffuse + specular)) * attenuation;
+        vec3 albedo = texture(textureUnitID,uv).rgb;
+        float diff = max(dot(normal,lightDir),0.0);
+        vec3 reflectDir = reflect(-lightDir, normal);
+        float spec = pow(max(dot(reflectDir,viewDir),0.0), material.shininess);
+        float distance = length(light.position - fragPos);
+        float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+
+        vec3 ambient = light.ambient * material.ambient * albedo;
+        vec3 diffuse = light.diffuse * (diff * material.diffuse) * albedo;
+        vec3 specular = light.specular * (spec * material.specular);
+
+        return (ambient + intensity * (diffuse + specular)) * attenuation;
 }
 
 // Uniform Buffer Object

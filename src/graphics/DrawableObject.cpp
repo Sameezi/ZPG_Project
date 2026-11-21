@@ -6,6 +6,7 @@
  * @author KUC0438 
   **/
 #include "DrawableObject.h"
+#include <random>
 
 DrawableObject::DrawableObject(Model& model, ShaderProgram& shader, unsigned int id)
     : m_model(&model)
@@ -19,16 +20,39 @@ DrawableObject::DrawableObject(Model& model, unsigned int id)
     , m_id(id)
 {}
 
+
+static glm::vec3 randomPoint(const glm::vec3& mn, const glm::vec3& mx) {
+    static std::mt19937 rng{std::random_device{}()};
+    std::uniform_real_distribution<float> dx(mn.x, mx.x), dy(mn.y, mx.y), dz(mn.z, mx.z);
+    return { dx(rng), dy(rng), dz(rng) };
+}
+
 void DrawableObject::update(float deltat) {
     if(m_hasAxis){
-        m_axis.time += deltat;
-        m_axis.t = (glm::sin(m_axis.time) + 1.0f) / 2.0f;
-		glm::vec3 dirVec = m_axis.B - m_axis.A;
-		setPos(m_axis.A + m_axis.t*(dirVec));
+        float len = glm::length(m_axis.B - m_axis.A);
+        m_axis.t +=  (len > 1e-4f) ? (m_axis.speed * deltat / len) : 1.0f; 
+
+        if (m_axis.t >= 1.0f) { 
+            setPos(m_axis.B);
+            m_axis.A = m_axis.B;
+            m_axis.B = randomPoint(m_axis.boundsMin, m_axis.boundsMax);
+            m_axis.t = 0.0f;
+        } else {
+            setPos(glm::mix(m_axis.A, m_axis.B, m_axis.t));
+        }
     }else{
         positionOffset += acceleration * deltat;
     }
 }
+
+void DrawableObject::startRoaming(glm::vec3 boundMin, glm::vec3 boundMax, float speed){
+    m_axis.boundsMin = boundMin;
+    m_axis.boundsMax = boundMax;
+    setParametricAxis(randomPoint(boundMin, boundMax));
+    setParametricAxis(randomPoint(boundMin, boundMax));
+    m_axis.speed = speed;
+}
+
 
 void DrawableObject::setTransform(std::shared_ptr<Transform> t) {
     m_transform = std::move(t);
@@ -48,12 +72,8 @@ void DrawableObject::setParametricAxis(glm::vec3 pos){
 		m_axis.index = 0;
 		setPos(m_axis.A);
         m_hasAxis = true;
-        m_axis.time = 0.0f;
+        m_axis.t = 0.0f;
 	}
-}
-
-float DrawableObject::getParametricProgress(){
-    return m_axis.t;
 }
 
 void DrawableObject::setTime(float time) {

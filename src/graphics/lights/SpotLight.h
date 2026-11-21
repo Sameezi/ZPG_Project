@@ -8,7 +8,9 @@ class SpotLight : public PointLight{
             float cutOff, float outerCutOff);
         void setPose(const glm::vec3& pos, const glm::vec3& front);
         void pack(LightsBlock& b, const glm::mat4& world) const override;
+        void enable();
     private:
         glm::vec3 m_direction;
         float m_cutOff, m_outerCutOff;
+        int m_enabled{0};
 };

@@ -24,3 +24,9 @@ void LightObject::pack(LightsBlock& b, Camera& c){
     matrice[3] = glm::vec4(getPos(),1.0f);
     m_light->pack(b, matrice); 
 }
+
+void LightObject::enable(){
+       if (auto spot = std::dynamic_pointer_cast<SpotLight>(m_light)) {
+        spot->enable();
+    }
+}
