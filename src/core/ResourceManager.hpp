@@ -45,3 +45,12 @@ private:
     std::vector<std::string> names;                      
     std::unordered_map<std::string, std::size_t> index;  
 };
+
+
+struct Resources {
+    ResourceManager<ShaderProgram> shaders;
+    ResourceManager<Texture>       textures;
+    ResourceManager<Cubemap>       cubemaps;
+    ResourceManager<Model>         models;
+	ResourceManager<InstancedModel> imodels;
+};

@@ -13,7 +13,7 @@ Scene::Scene() = default;
 Scene::~Scene() = default;
 
 void Scene::init() {
-    m_defaultShader = std::make_unique<ShaderProgram>("shaders/lighting_texture.vert", "shaders/phong_texture_multi.frag");
+    m_defaultShader = std::make_unique<ShaderProgram>("shaders/lighting_texture.vert", "shaders/phong_texture_ubo.frag");
     m_defaultShader->setCamera(getCamera());
 
     glGenBuffers(1, &lightsUBO);
@@ -115,10 +115,6 @@ Camera* Scene::getCamera(){
     return &m_camera;
 }
 
-glm::vec4& Scene::getBackgroundColor(){
-    return backgroundColor;
-}
-
 DrawableObject& Scene::getObject(const std::string& name){
     return *m_objects.at(name);
 }
@@ -189,3 +185,35 @@ std::shared_ptr<TransformComposite> Scene::getEditorObjTransform() const {
     composite->addNode(std::make_shared<Rotation>(r.x, glm::vec3(r.y, r.z, r.w)));
     return composite;
 }
+
+int Scene::getMode(){
+	if(mode.compare("Default") == 0){
+		return 0;
+	}else if(mode.compare("Insert") == 0){
+		return 1;
+	}else if(mode.compare("Delete") == 0){
+		return 2;
+	}else if(mode.compare("Parametric axis") == 0){
+		return 3;
+	}else{
+		return 4;
+	}
+}
+
+void Scene::switchMode(){
+	if(mode.compare("Default") == 0){
+		mode = "Insert";
+	}else if(mode.compare("Insert") == 0){
+		mode = "Delete";
+	}else if(mode.compare("Delete") == 0){
+		mode = "Parametric axis";
+	}else{
+		mode = "Default";
+	}
+}
+
+void Scene::setId(GLuint id){
+    selectedId = id;
+}
+	//main_scene->addObject(main_scene->getEditorObjModel(),*resources.shaders.get("texture"));
+	//main_scene->getObject().setTransform(main_scene->getEditorObjTransform());

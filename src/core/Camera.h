@@ -21,7 +21,7 @@ class Camera{
        glm::vec3 getPos() const;
 
        void rotate(float deltaYaw, float deltaPitch);
-       void setMovement(glm::vec2 offset);
+       void setMovement(glm::vec3 offset);
 
        void updateView();
        void update(float deltaTime);
@@ -38,7 +38,7 @@ class Camera{
         float nearPlane{0.1f};
         float farPlane{160.0f};
 
-        glm::vec2 movement{0.0f,0.0f};
+        glm::vec3 movement{0.0f, 0.0f, 0.0f};
         glm::vec3 position{0.0f, 2.0f, 4.0f};
 
 };

@@ -49,7 +49,7 @@ void Camera::rotate(float deltaYaw, float deltaPitch){
     pitch = std::clamp(pitch + deltaPitch, -89.0f, 89.0f);
 }
 
-void Camera::setMovement(glm::vec2 offset){
+void Camera::setMovement(glm::vec3 offset){
     this->movement = offset;
 }
 
@@ -74,11 +74,8 @@ void Camera::update(float deltaTime){
     glm::vec3 front = getFront();
     glm::vec3 right = glm::normalize(glm::cross(front, up));
 
-    front.y = 0.0;
     position += front * movement.x * deltaTime;
     position += right * movement.y * deltaTime; 
-    position.y = 1.3;
-    
     updateView();
 }
 

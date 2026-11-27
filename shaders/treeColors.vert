@@ -19,7 +19,6 @@ void main()
     else vertexColor = vec3(0.1f,0.1f,0.f);
     vec4 world = instanceMatrix * vec4(position, 1.0);
     worldPos = world.xyz;
-    mat3 normalMatrix = transpose(inverse(mat3(instanceMatrix)));
-    worldNorm = normalize(normalMatrix * normal);
-    gl_Position  =  projectionMatrix * viewMatrix * instanceMatrix * vec4(position, 1.0);
+    worldNorm = normalize(mat3(instanceMatrix) * normal);
+    gl_Position  =  projectionMatrix * viewMatrix * world; 
 }

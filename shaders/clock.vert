@@ -10,7 +10,9 @@ uniform mat4 projectionMatrix = mat4(1.0);;
 uniform float utime;
 
 out vec3 vertexColor;
-out vec3 vertexNormal;
+out vec3 worldNorm;
+out vec3 worldPos;
+
 
 void main()
 {
@@ -43,6 +45,10 @@ void main()
         p = position.xy;
     }
 
+    vec4 world = modelMatrix * vec4(position, 1.0);
+    worldPos = world.xyz;
+    worldNorm = mat3(transpose(inverse(modelMatrix))) * normal;
+    
     gl_Position  =  projectionMatrix * viewMatrix * modelMatrix * vec4(p,position.z, 1.0);
 
     

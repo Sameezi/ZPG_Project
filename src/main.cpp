@@ -16,6 +16,7 @@ int main(void)
 		return EXIT_FAILURE;
 	}
 	app->addScenes();
+	app->keybinds();
 	app->run();
 	return EXIT_SUCCESS;
 }
